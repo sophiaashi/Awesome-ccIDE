@@ -15,6 +15,10 @@ interface SessionItemProps {
   homedir?: string
   /** Resume 回调（由父组件提供） */
   onResume?: (session: Session) => Promise<void>
+  /** 由父组件触发的 resume（键盘 Enter 时使用） */
+  triggerResume?: boolean
+  /** 通知父组件已接管 triggerResume */
+  onTriggerResumeHandled?: () => void
 }
 
 /**
@@ -39,7 +43,7 @@ function shortenPath(fullPath: string, homedir: string): string {
   return fullPath
 }
 
-export function SessionItem({ session, isSelected = false, homedir = '', onResume }: SessionItemProps) {
+export function SessionItem({ session, isSelected = false, homedir = '', onResume, triggerResume = false, onTriggerResumeHandled }: SessionItemProps) {
   const projectColor = getProjectColor(session.projectName)
   const relativeTime = formatRelativeTime(session.modified)
   const itemRef = useRef<HTMLDivElement>(null)
@@ -55,9 +59,11 @@ export function SessionItem({ session, isSelected = false, homedir = '', onResum
     }
   }, [isSelected])
 
-  // 处理 Resume 点击
-  const handleResume = async (e: React.MouseEvent) => {
-    e.stopPropagation()
+  /**
+   * 执行 resume 操作并管理 UI 状态
+   * 同时被按钮点击和键盘 Enter 两条路径复用
+   */
+  const doResume = async () => {
     if (resumeStatus === 'loading' || !onResume) return
 
     setResumeStatus('loading')
@@ -78,6 +84,20 @@ export function SessionItem({ session, isSelected = false, homedir = '', onResum
         setErrorMsg('')
       }, 5000)
     }
+  }
+
+  // 响应键盘 Enter 触发的 resume
+  useEffect(() => {
+    if (triggerResume) {
+      onTriggerResumeHandled?.()
+      doResume()
+    }
+  }, [triggerResume])
+
+  // 处理 Resume 点击
+  const handleResume = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    doResume()
   }
 
   // 根据状态渲染按钮文字

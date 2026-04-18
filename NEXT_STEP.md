@@ -35,12 +35,31 @@
 - [x] 前端：失败时显示错误信息（5秒后消失）
 - [x] 前端：Enter 键 resume 当前选中的 session（接入 useKeyboard hook）
 
+### Sprint 4：终端布局管理
+- [x] 修复 P1 bug：键盘 Enter resume 时 SessionItem 不显示状态反馈
+  - 新增 triggerResume/onTriggerResumeHandled 机制，统一按钮点击和键盘 Enter 两条 resume 路径
+  - SessionItem 内部 doResume() 方法被两条路径复用，确保 loading/success/error 状态一致
+- [x] 后端：POST /api/layout API — 接收布局类型，AppleScript 批量设置窗口位置大小
+- [x] 后端：GET /api/terminal-status API — 获取当前终端窗口列表
+- [x] 后端：获取屏幕可用区域（python3 + AppKit NSScreen.visibleFrame）
+- [x] 后端：获取终端窗口列表（AppleScript 遍历窗口 id 和 name）
+- [x] 后端：4 种布局计算逻辑（two-col、three-col、quad、stack）
+- [x] 后端：AppleScript 批量设置窗口 bounds
+- [x] 后端：完整的参数校验和错误处理
+- [x] 前端：LayoutBar 组件 — 水平排列的图标按钮组
+- [x] 前端：4 种布局 SVG 图标（双列、三列、四宫格、堆叠）
+- [x] 前端：激活状态高亮（背景 --accent，图标白色）
+- [x] 前端：点击后 spinner 加载状态
+- [x] 前端：无终端窗口时友好提示 toast
+- [x] 前端：FilterBar + LayoutBar 集成到同一行
+
 ## 下一个 Sprint
 
-### Sprint 4：终端布局管理
-- [ ] 后端：获取屏幕分辨率（AppleScript）
-- [ ] 后端：获取当前打开的终端窗口列表
-- [ ] 后端：按布局计算每个窗口的 position 和 size
-- [ ] 后端：AppleScript 批量设置窗口位置大小
-- [ ] 前端：布局按钮组，图标直观展示每种布局
-- [ ] 前端：当前布局高亮
+### Sprint 5：全屏 + 侧边栏模式
+- [ ] 后端：获取当前终端窗口列表，识别哪些是 claude session
+- [ ] 后端：AppleScript 将指定窗口全屏/置顶
+- [ ] 前端：全屏模式切换按钮
+- [ ] 前端：侧边栏组件 — 显示已打开的终端 session 列表
+- [ ] 前端：点击侧边栏条目 → 调用 API 将对应终端窗口置顶
+- [ ] 前端：当前活跃窗口在侧边栏中高亮
+- [ ] 侧边栏可收起/展开

@@ -2,6 +2,8 @@
 import express from 'express'
 import { loadAllSessions } from './sessions.js'
 import { resumeSession } from './terminal.js'
+import { applyLayout, getTerminalStatus } from './layout.js'
+import type { LayoutType } from './layout.js'
 
 const app = express()
 const PORT = 3457
@@ -40,6 +42,39 @@ app.post('/api/resume', async (req, res) => {
     console.error('Resume session 失败:', err)
     const message = err instanceof Error ? err.message : '未知错误'
     res.status(500).json({ error: `无法打开终端: ${message}` })
+  }
+})
+
+// API：设置终端窗口布局
+app.post('/api/layout', async (req, res) => {
+  try {
+    const { layout } = req.body
+
+    // 参数校验
+    const validLayouts: LayoutType[] = ['quad', 'three-col', 'two-col', 'stack']
+    if (!layout || !validLayouts.includes(layout)) {
+      res.status(400).json({ error: '无效的布局类型，支持: quad, three-col, two-col, stack' })
+      return
+    }
+
+    const result = await applyLayout(layout as LayoutType)
+    res.json(result)
+  } catch (err) {
+    console.error('布局设置失败:', err)
+    const message = err instanceof Error ? err.message : '未知错误'
+    res.status(500).json({ error: `布局设置失败: ${message}` })
+  }
+})
+
+// API：获取当前终端窗口状态
+app.get('/api/terminal-status', async (_req, res) => {
+  try {
+    const status = await getTerminalStatus()
+    res.json(status)
+  } catch (err) {
+    console.error('获取终端状态失败:', err)
+    const message = err instanceof Error ? err.message : '未知错误'
+    res.status(500).json({ error: `获取终端状态失败: ${message}` })
   }
 })
 

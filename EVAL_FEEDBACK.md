@@ -258,3 +258,148 @@ Sprint 2 交付质量很好。8 条验收标准全部通过。搜索功能实时
 3. **P2 - Enter 打开详情**: 键盘导航选中 session 后按 Enter 可打开详情
 4. **P3 - 搜索 debounce**: 添加 150-300ms 的 debounce，为大数据量场景做准备
 5. **P3 - 自定义 Select 样式**: 替换原生 select 为自定义下拉组件，统一深色主题风格
+
+---
+---
+
+# Sprint 3 Evaluation Report
+
+**测试时间**: 2026-04-17
+**测试方式**: 浏览器实测 (gstack browse headless browser) + curl API 测试 + osascript 终端窗口验证
+**截图证据**: /tmp/eval_01_initial.png 至 /tmp/eval_13_error.png
+
+---
+
+## 验收标准逐条验证
+
+### AC-1: 鼠标悬停 session 行，右侧出现「Resume」按钮
+**结果: PASS**
+
+- 默认状态下 Resume 按钮不可见（通过 CSS `opacity-0 group-hover:opacity-100` 实现）
+- 鼠标 hover 到 session 行后，右侧出现橙色 "Resume ▶" 按钮
+- 按钮样式为橙色背景白色文字，与整体暗色主题协调
+- 鼠标移开后按钮消失
+- 在不同 session 行上 hover 均能正确显示
+- 截图证据: /tmp/eval_02_no_hover.png（无按钮）, /tmp/eval_03_hover.png（hover 后显示按钮）, /tmp/eval_05_hover2.png（第二行 hover）
+
+### AC-2: 点击「Resume」，自动打开一个新的终端窗口
+**结果: PASS**
+
+- 点击 Resume 按钮后，Terminal.app 自动打开新窗口
+- 通过 osascript 计数验证：点击前 Terminal 窗口数为 1，多次 Resume 后增长到 6、7、8
+- 后端使用 AppleScript 驱动 Terminal.app（检测到无 iTerm2 时回退到 Terminal.app）
+- API 返回 `{"success":true,"terminal":"Terminal.app"}`
+- 截图证据: /tmp/eval_06_loading.png（点击后 loading 状态）
+
+### AC-3: 新终端窗口中自动 cd 到正确的项目目录并执行 claude --resume <sessionId>
+**结果: PASS（通过代码审查 + API 验证）**
+
+- 代码审查确认：`server/terminal.ts` 中 `resumeSession()` 函数构造命令 `cd '${projectPath}' && claude --resume ${sessionId}`
+- AppleScript 通过 `do script` 在新 Terminal 窗口中执行该命令
+- API 测试 `curl -X POST http://localhost:3457/api/resume -d '{"sessionId":"test","projectPath":"/tmp"}'` 成功返回
+- 路径特殊字符通过 `escapeForAppleScript()` 正确转义
+- 注：由于浏览器测试环境无法直接观察终端窗口内容，通过代码审查 + API 功能验证确认
+
+### AC-4: 点击后 UI 显示 "正在打开..." 状态，随后显示成功提示
+**结果: PASS**
+
+- 点击 Resume 后立即显示 "正在打开..." 文字（灰色文字，替代按钮位置）
+- API 调用成功后显示 "✓ 已打开"（绿色文字）
+- 成功状态持续 2 秒后自动恢复为默认 "Resume ▶" 按钮
+- 三种状态的视觉样式区分明确：
+  - idle: 橙色 "Resume ▶" 按钮（仅 hover 可见）
+  - loading: 灰色 "正在打开..." 文字
+  - success: 绿色 "✓ 已打开" 文字
+  - error: 红色错误信息文字
+- 截图证据: /tmp/eval_06_loading.png（loading 状态清晰可见）
+
+### AC-5: 在搜索结果中用 ↑↓ 选中后按 Enter，效果与点击 Resume 相同
+**结果: PASS（功能正确，但有 UI 状态反馈缺失）**
+
+- 按 ArrowDown 选中 session 后，session 行获得高亮背景
+- 按 Enter 成功触发 resume，终端窗口数从 6 增加到 7
+- 在搜索结果中（搜索 "yumi" 后 1 条结果），ArrowDown 选中 + Enter 同样成功，终端窗口数从 7 增加到 8
+- **注意缺陷**: 通过键盘 Enter 触发的 resume 不会在 UI 上显示 "正在打开..." → "✓ 已打开" 的状态反馈。原因是 `App.tsx` 中的 `onEnter` 回调直接调用 `handleResume(session)` 并 catch 错误到 console，但没有通知 `SessionItem` 组件更新其内部 `resumeStatus` 状态。按钮点击方式则通过 `SessionItem` 内部的 `handleResume` 管理状态，两条路径不统一。
+- 截图证据: /tmp/eval_08_arrow_selected.png（选中状态）, /tmp/eval_09_third_selected.png（第三行选中）
+
+### AC-6: 如果终端 app 未安装或出错，显示错误信息
+**结果: PASS**
+
+**API 层错误处理:**
+- 缺少 sessionId: 返回 400 `{"error":"缺少有效的 sessionId"}`
+- 缺少 projectPath: 返回 400 `{"error":"缺少有效的 projectPath"}`
+- 空 body: 返回 400 `{"error":"缺少有效的 sessionId"}`
+- 类型错误（数字代替字符串）: 返回 400 `{"error":"缺少有效的 sessionId"}`
+
+**UI 层错误处理:**
+- 通过 mock fetch 模拟 API 返回 500 错误 `{"error":"终端应用未安装"}`
+- UI 正确显示红色/橙色错误信息 "终端应用未安装"
+- 错误信息显示在按钮原本的位置，5 秒后自动恢复为 Resume 按钮
+- 错误信息支持 title 属性显示完整文本（用于长错误信息截断时的查看）
+- 截图证据: /tmp/eval_13_error.png（错误状态清晰显示）
+
+---
+
+## 四维评分
+
+### 功能完整性: 9/10
+全部 6 条验收标准均通过。核心 Resume 功能完整实现：
+- hover 显示/隐藏按钮
+- 点击打开终端窗口
+- 正确的 cd + claude --resume 命令
+- UI 状态反馈（loading/success/error）
+- 键盘 Enter 触发 resume
+- API 参数校验和错误处理
+- 扣 1 分：键盘 Enter 触发 resume 时没有 UI 状态反馈（"正在打开..." → "✓ 已打开"），与按钮点击体验不一致
+
+### 可用性: 8.5/10
+- hover 显示按钮的交互模式直觉化，不干扰浏览
+- 状态反馈清晰：loading → success → 自动恢复
+- 错误信息用中文展示，对用户友好
+- 自动恢复时间合理（成功 2 秒，错误 5 秒）
+- 扣分原因：
+  - 键盘 Enter 无视觉反馈，用户不确定操作是否成功（-1）
+  - Resume 按钮没有 tooltip 说明"在新终端窗口中恢复此 session"（-0.5）
+
+### 视觉设计: 9/10
+- Resume 按钮橙色配色与整体暗色主题形成恰到好处的对比
+- 三种状态（idle/loading/success/error）的颜色区分明确
+- 按钮 hover 效果（颜色变深）提供触觉反馈
+- 成功状态的绿色、错误状态的红色符合用户心理预期
+- 扣分原因：
+  - loading 状态没有动画（如旋转 spinner），纯文字 "正在打开..." 略显静态（-0.5）
+  - 按钮出现/消失用了 opacity 过渡但持续时间 150ms 偏快，可以稍慢到 200-250ms（-0.5）
+
+### 代码质量: 8.5/10
+- `server/terminal.ts` 架构清晰：检测终端 → 转义 → 生成 AppleScript → 执行
+- 支持 iTerm2 和 Terminal.app 双终端，自动检测
+- AppleScript 通过 stdin 传入，避免 shell 注入
+- 字符串转义函数 `escapeForAppleScript` 处理双引号和反斜杠
+- `SessionItem` 组件状态机清晰：idle → loading → success/error → idle
+- 扣分：
+  - `onEnter` 和按钮点击两条 resume 路径不统一，应该复用 SessionItem 内部状态管理（-1）
+  - `resumeSession` 函数中 `cd '${escapedPath}'` 使用单引号包裹路径，但 `escapeForAppleScript` 只转义双引号，如果路径中含单引号会导致命令注入（-0.5）
+
+---
+
+## 综合评分: 8.8 / 10
+
+## 总结
+
+Sprint 3 交付质量良好。6 条验收标准全部通过。一键 Resume 核心功能完整：hover 按钮、终端窗口打开、命令正确执行、UI 状态反馈、键盘快捷键支持、错误处理。
+
+主要亮点：
+- 自动检测 iTerm2/Terminal.app，适配不同用户环境
+- AppleScript 通过 stdin 传入避免 shell 注入，安全意识好
+- 三态 UI 反馈（loading/success/error）用户体验完善
+
+主要问题：
+- 键盘 Enter 触发 resume 时缺少 UI 状态反馈，与按钮点击行为不一致（功能正常但无视觉反馈）
+
+## 建议下一步改进
+
+1. **P1 - 统一 Resume 路径**: 键盘 Enter 应该触发 SessionItem 内部的 handleResume，而非 App 层直接调用 API，以确保 UI 状态（loading/success/error）正确显示
+2. **P2 - Loading 动画**: 为 "正在打开..." 状态添加旋转 spinner 或脉冲动画
+3. **P2 - 路径单引号处理**: `escapeForAppleScript` 应同时处理单引号转义，或改用双引号包裹路径
+4. **P3 - 按钮 Tooltip**: 添加 tooltip "在新终端窗口中恢复此 session"
+5. **P3 - 按钮过渡时间**: opacity 过渡从 150ms 调整为 200-250ms，更柔和自然

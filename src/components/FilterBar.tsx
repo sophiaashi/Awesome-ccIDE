@@ -30,11 +30,7 @@ export function FilterBar({
 }: FilterBarProps) {
   return (
     <div
-      className="flex items-center gap-3 px-4 py-2 border-b text-xs"
-      style={{
-        borderColor: 'var(--border)',
-        backgroundColor: 'var(--bg-secondary)',
-      }}
+      className="flex items-center gap-3 px-4 py-2 text-xs"
     >
       {/* 项目过滤下拉 */}
       <div className="flex items-center gap-1.5">

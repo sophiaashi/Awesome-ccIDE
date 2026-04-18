@@ -13,6 +13,10 @@ interface SessionListProps {
   homedir?: string
   /** Resume 回调 */
   onResume?: (session: Session) => Promise<void>
+  /** 通过键盘 Enter 触发 resume 的目标 sessionId */
+  keyboardResumeId?: string | null
+  /** 键盘 resume 已被 SessionItem 接管后的回调 */
+  onKeyboardResumeHandled?: () => void
 }
 
 export function SessionList({
@@ -23,6 +27,8 @@ export function SessionList({
   selectedIndex = -1,
   homedir = '',
   onResume,
+  keyboardResumeId,
+  onKeyboardResumeHandled,
 }: SessionListProps) {
   // 加载中状态
   if (loading) {
@@ -90,6 +96,8 @@ export function SessionList({
             isSelected={index === selectedIndex}
             homedir={homedir}
             onResume={onResume}
+            triggerResume={keyboardResumeId === session.sessionId}
+            onTriggerResumeHandled={onKeyboardResumeHandled}
           />
         ))}
       </div>

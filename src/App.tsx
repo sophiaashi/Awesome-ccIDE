@@ -5,8 +5,9 @@ import { useKeyboard } from './hooks/useKeyboard'
 import { SessionList } from './components/SessionList'
 import { SearchBar } from './components/SearchBar'
 import { FilterBar } from './components/FilterBar'
+import { LayoutBar } from './components/LayoutBar'
 import { initProjectColors } from './utils/color'
-import { useEffect, useCallback } from 'react'
+import { useEffect, useCallback, useState } from 'react'
 import type { Session } from './types/session'
 
 export default function App() {
@@ -23,6 +24,12 @@ export default function App() {
     filteredSessions,
     filteredCount,
   } = useSearch(sessions)
+
+  /**
+   * 通过键盘 Enter 触发 resume 时，记录目标 sessionId，
+   * 让 SessionItem 组件能感知并显示 loading/success/error 状态
+   */
+  const [keyboardResumeId, setKeyboardResumeId] = useState<string | null>(null)
 
   /**
    * 调用后端 API resume 一个 session
@@ -50,12 +57,11 @@ export default function App() {
   const { selectedIndex, searchInputRef } = useKeyboard({
     itemCount: filteredSessions.length,
     // Enter 键 resume 当前选中的 session
+    // 通过设置 keyboardResumeId 通知 SessionItem 触发内部状态更新
     onEnter: (index) => {
       const session = filteredSessions[index]
       if (session) {
-        handleResume(session).catch((err) => {
-          console.error('Resume 失败:', err)
-        })
+        setKeyboardResumeId(session.sessionId)
       }
     },
   })
@@ -114,15 +120,24 @@ export default function App() {
 
       {/* 主内容区 */}
       <main className="max-w-5xl mx-auto">
-        {/* 过滤/排序栏 */}
+        {/* 过滤/排序栏 + 布局控制 */}
         {!loading && !error && (
-          <FilterBar
-            projects={projects}
-            filterProject={filterProject}
-            onFilterProjectChange={setFilterProject}
-            sortMode={sortMode}
-            onSortModeChange={setSortMode}
-          />
+          <div
+            className="flex items-center justify-between border-b"
+            style={{
+              borderColor: 'var(--border)',
+              backgroundColor: 'var(--bg-secondary)',
+            }}
+          >
+            <FilterBar
+              projects={projects}
+              filterProject={filterProject}
+              onFilterProjectChange={setFilterProject}
+              sortMode={sortMode}
+              onSortModeChange={setSortMode}
+            />
+            <LayoutBar />
+          </div>
         )}
 
         {/* Session 列表 */}
@@ -134,6 +149,8 @@ export default function App() {
           selectedIndex={selectedIndex}
           homedir={homedir}
           onResume={handleResume}
+          keyboardResumeId={keyboardResumeId}
+          onKeyboardResumeHandled={() => setKeyboardResumeId(null)}
         />
       </main>
     </div>
