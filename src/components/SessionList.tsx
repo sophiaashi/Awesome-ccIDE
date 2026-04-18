@@ -7,9 +7,20 @@ interface SessionListProps {
   loading: boolean
   error: string | null
   totalCount: number
+  /** 当前选中的索引（键盘导航） */
+  selectedIndex?: number
+  /** 用于 shortenPath 的 home 目录 */
+  homedir?: string
 }
 
-export function SessionList({ sessions, loading, error, totalCount }: SessionListProps) {
+export function SessionList({
+  sessions,
+  loading,
+  error,
+  totalCount,
+  selectedIndex = -1,
+  homedir = '',
+}: SessionListProps) {
   // 加载中状态
   if (loading) {
     return (
@@ -44,7 +55,7 @@ export function SessionList({ sessions, loading, error, totalCount }: SessionLis
     )
   }
 
-  // 空状态
+  // 空状态（搜索无结果 vs 完全没有数据）
   if (sessions.length === 0) {
     return (
       <div
@@ -52,9 +63,13 @@ export function SessionList({ sessions, loading, error, totalCount }: SessionLis
         style={{ color: 'var(--text-secondary)' }}
       >
         <div className="text-center">
-          <div className="text-lg mb-2">没有找到 session</div>
+          <div className="text-lg mb-2">
+            {totalCount > 0 ? '没有匹配的结果' : '没有找到 session'}
+          </div>
           <div className="text-sm" style={{ color: 'var(--text-muted)' }}>
-            请确认 ~/.claude/projects/ 目录下有 sessions-index.json 文件
+            {totalCount > 0
+              ? '试试调整搜索关键词或过滤条件'
+              : '请确认 ~/.claude/projects/ 目录下有 sessions-index.json 文件'}
           </div>
         </div>
       </div>
@@ -63,23 +78,15 @@ export function SessionList({ sessions, loading, error, totalCount }: SessionLis
 
   return (
     <div>
-      {/* 列表头部信息 */}
-      <div
-        className="px-4 py-2 text-xs flex justify-between items-center border-b"
-        style={{
-          color: 'var(--text-muted)',
-          borderColor: 'var(--border)',
-          backgroundColor: 'var(--bg-secondary)',
-        }}
-      >
-        <span>共 {totalCount} 个 session</span>
-        <span>按最近修改时间排序</span>
-      </div>
-
       {/* Session 列表 */}
-      <div className="overflow-y-auto" style={{ maxHeight: 'calc(100vh - 120px)' }}>
-        {sessions.map((session) => (
-          <SessionItem key={session.sessionId} session={session} />
+      <div className="overflow-y-auto" style={{ maxHeight: 'calc(100vh - 160px)' }}>
+        {sessions.map((session, index) => (
+          <SessionItem
+            key={session.sessionId}
+            session={session}
+            isSelected={index === selectedIndex}
+            homedir={homedir}
+          />
         ))}
       </div>
     </div>

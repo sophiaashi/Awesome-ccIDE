@@ -6,6 +6,7 @@ interface UseSessionsReturn {
   sessions: Session[]
   totalCount: number
   projects: string[]
+  homedir: string
   loading: boolean
   error: string | null
 }
@@ -14,6 +15,7 @@ export function useSessions(): UseSessionsReturn {
   const [sessions, setSessions] = useState<Session[]>([])
   const [totalCount, setTotalCount] = useState(0)
   const [projects, setProjects] = useState<string[]>([])
+  const [homedir, setHomedir] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -27,6 +29,7 @@ export function useSessions(): UseSessionsReturn {
         setSessions(data.sessions)
         setTotalCount(data.totalCount)
         setProjects(data.projects)
+        setHomedir(data.homedir)
       } catch (err) {
         setError(err instanceof Error ? err.message : '加载失败')
       } finally {
@@ -36,5 +39,5 @@ export function useSessions(): UseSessionsReturn {
     fetchSessions()
   }, [])
 
-  return { sessions, totalCount, projects, loading, error }
+  return { sessions, totalCount, projects, homedir, loading, error }
 }

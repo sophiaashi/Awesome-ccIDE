@@ -2,9 +2,14 @@
 import type { Session } from '../types/session'
 import { formatRelativeTime } from '../utils/time'
 import { getProjectColor } from '../utils/color'
+import { useEffect, useRef } from 'react'
 
 interface SessionItemProps {
   session: Session
+  /** 是否为选中状态（键盘导航） */
+  isSelected?: boolean
+  /** 用于 shortenPath 的 home 目录（从 API 动态获取） */
+  homedir?: string
 }
 
 /**
@@ -19,38 +24,52 @@ function truncateText(text: string, maxLength: number): string {
 /**
  * 缩短项目路径显示
  * 例如："/Users/sophia/teamoclaw" → "~/teamoclaw"
+ * 使用动态 homedir，不再硬编码
  */
-function shortenPath(fullPath: string): string {
+function shortenPath(fullPath: string, homedir: string): string {
   if (!fullPath || fullPath === '/') return '/'
-  const home = '/Users/sophia'
-  if (fullPath.startsWith(home)) {
-    return '~' + fullPath.slice(home.length)
+  if (homedir && fullPath.startsWith(homedir)) {
+    return '~' + fullPath.slice(homedir.length)
   }
   return fullPath
 }
 
-export function SessionItem({ session }: SessionItemProps) {
+export function SessionItem({ session, isSelected = false, homedir = '' }: SessionItemProps) {
   const projectColor = getProjectColor(session.projectName)
   const relativeTime = formatRelativeTime(session.modified)
+  const itemRef = useRef<HTMLDivElement>(null)
+
+  // 选中时自动滚动到可见区域
+  useEffect(() => {
+    if (isSelected && itemRef.current) {
+      itemRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    }
+  }, [isSelected])
 
   return (
     <div
+      ref={itemRef}
       className="group flex items-stretch border-b transition-colors duration-150 cursor-pointer"
       style={{
         borderColor: 'var(--border)',
-        backgroundColor: 'transparent',
+        backgroundColor: isSelected ? 'var(--bg-active)' : 'transparent',
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)'
+        if (!isSelected) {
+          e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)'
+        }
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.backgroundColor = 'transparent'
+        e.currentTarget.style.backgroundColor = isSelected ? 'var(--bg-active)' : 'transparent'
       }}
     >
       {/* 左侧项目颜色竖条 */}
       <div
-        className="w-1 shrink-0 rounded-l"
-        style={{ backgroundColor: projectColor }}
+        className="w-1 shrink-0 rounded-l transition-opacity duration-150"
+        style={{
+          backgroundColor: projectColor,
+          opacity: isSelected ? 1 : 0.7,
+        }}
       />
 
       {/* 主体内容 */}
@@ -105,7 +124,7 @@ export function SessionItem({ session }: SessionItemProps) {
               fontSize: '12px',
             }}
           >
-            {shortenPath(session.projectPath)}
+            {shortenPath(session.projectPath, homedir)}
           </span>
 
           {/* Git 分支标签 */}

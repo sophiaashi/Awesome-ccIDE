@@ -56,6 +56,7 @@ export async function loadAllSessions(): Promise<{
   sessions: SessionData[]
   totalCount: number
   projects: string[]
+  homedir: string
 }> {
   const homeDir = os.homedir()
   const pattern = path.join(homeDir, '.claude', 'projects', '*', 'sessions-index.json')
@@ -98,8 +99,18 @@ export async function loadAllSessions(): Promise<{
     }
   }
 
+  // 去重：同一个 sessionId 可能出现在多个 index 文件中，保留最新的
+  const sessionMap = new Map<string, SessionData>()
+  for (const session of allSessions) {
+    const existing = sessionMap.get(session.sessionId)
+    if (!existing || new Date(session.modified).getTime() > new Date(existing.modified).getTime()) {
+      sessionMap.set(session.sessionId, session)
+    }
+  }
+  const uniqueSessions = Array.from(sessionMap.values())
+
   // 按 modified 时间倒序排列（最新的在最上面）
-  allSessions.sort((a, b) => {
+  uniqueSessions.sort((a, b) => {
     const timeA = new Date(a.modified).getTime()
     const timeB = new Date(b.modified).getTime()
     return timeB - timeA
@@ -108,8 +119,9 @@ export async function loadAllSessions(): Promise<{
   const projects = Array.from(projectSet).sort()
 
   return {
-    sessions: allSessions,
-    totalCount: allSessions.length,
+    sessions: uniqueSessions,
+    totalCount: uniqueSessions.length,
     projects,
+    homedir: homeDir,
   }
 }

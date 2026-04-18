@@ -25,4 +25,8 @@ export interface SessionsResponse {
   sessions: Session[]
   totalCount: number
   projects: string[]
+  homedir: string
 }
+
+/** 排序方式 */
+export type SortMode = 'modified' | 'created' | 'messageCount'
