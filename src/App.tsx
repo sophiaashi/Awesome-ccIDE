@@ -6,7 +6,8 @@ import { SessionList } from './components/SessionList'
 import { SearchBar } from './components/SearchBar'
 import { FilterBar } from './components/FilterBar'
 import { initProjectColors } from './utils/color'
-import { useEffect } from 'react'
+import { useEffect, useCallback } from 'react'
+import type { Session } from './types/session'
 
 export default function App() {
   const { sessions, totalCount, projects, homedir, loading, error } = useSessions()
@@ -23,12 +24,39 @@ export default function App() {
     filteredCount,
   } = useSearch(sessions)
 
+  /**
+   * 调用后端 API resume 一个 session
+   * 在新终端窗口中 cd 到项目目录并执行 claude --resume
+   */
+  const handleResume = useCallback(async (session: Session) => {
+    const response = await fetch('/api/resume', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sessionId: session.sessionId,
+        projectPath: session.projectPath,
+      }),
+    })
+
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({ error: '请求失败' }))
+      throw new Error(data.error || `HTTP ${response.status}`)
+    }
+
+    return await response.json()
+  }, [])
+
   // 键盘导航
   const { selectedIndex, searchInputRef } = useKeyboard({
     itemCount: filteredSessions.length,
-    // Enter 确认（Sprint 3 实现 resume 功能后接入）
-    onEnter: (_index) => {
-      // TODO: Sprint 3 实现 resume 功能
+    // Enter 键 resume 当前选中的 session
+    onEnter: (index) => {
+      const session = filteredSessions[index]
+      if (session) {
+        handleResume(session).catch((err) => {
+          console.error('Resume 失败:', err)
+        })
+      }
     },
   })
 
@@ -105,6 +133,7 @@ export default function App() {
           totalCount={totalCount}
           selectedIndex={selectedIndex}
           homedir={homedir}
+          onResume={handleResume}
         />
       </main>
     </div>

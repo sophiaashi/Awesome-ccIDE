@@ -17,7 +17,19 @@ npm run dev
 ## 访问地址
 
 - 前端页面：http://localhost:3456
-- API 接口：http://localhost:3456/api/sessions（通过 Vite proxy）
+- API 接口（通过 Vite proxy）：
+  - `GET /api/sessions` — 获取所有 session 数据
+  - `POST /api/resume` — 在新终端窗口中 resume 一个 session
+
+## API 详情
+
+### GET /api/sessions
+返回所有 session 列表、项目列表、总数、homedir。
+
+### POST /api/resume
+请求体：`{ "sessionId": "xxx", "projectPath": "/path/to/project" }`
+响应：`{ "success": true, "terminal": "Terminal.app" | "iTerm2" }`
+功能：自动检测终端应用（Terminal.app / iTerm2），通过 AppleScript 打开新窗口并执行 `cd + claude --resume`。
 
 ## 启动流程
 

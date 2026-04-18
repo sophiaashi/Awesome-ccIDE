@@ -23,11 +23,24 @@
 - [x] 修复 P2 问题：shortenPath 不再硬编码，改为从 API 动态获取 homedir
 - [x] 修复 session 去重问题（同一 sessionId 出现在多个 index 文件中）
 
+### Sprint 3：一键 Resume
+- [x] 后端：检测用户使用 Terminal.app 还是 iTerm2（检查 /Applications/iTerm.app）
+- [x] 后端：POST /api/resume API — 接收 sessionId + projectPath，通过 AppleScript 打开新终端窗口
+- [x] 后端：AppleScript 脚本 — 打开新终端窗口，cd 到项目目录，执行 claude --resume
+- [x] 后端：安全的 AppleScript 执行方式（execFile + stdin，避免 shell 注入）
+- [x] 后端：完整的参数校验和错误处理
+- [x] 前端：session 行悬停显示「Resume ▶」按钮（#DA7756 品牌橙，悬停 #E8956E）
+- [x] 前端：点击后显示 "正在打开..." 加载状态
+- [x] 前端：成功后显示 "✓ 已打开" 提示（2秒后消失）
+- [x] 前端：失败时显示错误信息（5秒后消失）
+- [x] 前端：Enter 键 resume 当前选中的 session（接入 useKeyboard hook）
+
 ## 下一个 Sprint
 
-### Sprint 3：一键 Resume
-- [ ] 后端：检测用户使用 Terminal.app 还是 iTerm2
-- [ ] 后端：AppleScript 脚本 — 打开新终端窗口，cd 到项目目录，执行 claude --resume
-- [ ] 前端：session 行悬停显示「Resume」按钮
-- [ ] 前端：点击后的加载状态和成功/失败反馈
-- [ ] 前端：Enter 键 resume 当前选中的 session（接入 useKeyboard hook）
+### Sprint 4：终端布局管理
+- [ ] 后端：获取屏幕分辨率（AppleScript）
+- [ ] 后端：获取当前打开的终端窗口列表
+- [ ] 后端：按布局计算每个窗口的 position 和 size
+- [ ] 后端：AppleScript 批量设置窗口位置大小
+- [ ] 前端：布局按钮组，图标直观展示每种布局
+- [ ] 前端：当前布局高亮

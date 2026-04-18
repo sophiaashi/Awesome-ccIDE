@@ -11,6 +11,8 @@ interface SessionListProps {
   selectedIndex?: number
   /** 用于 shortenPath 的 home 目录 */
   homedir?: string
+  /** Resume 回调 */
+  onResume?: (session: Session) => Promise<void>
 }
 
 export function SessionList({
@@ -20,6 +22,7 @@ export function SessionList({
   totalCount,
   selectedIndex = -1,
   homedir = '',
+  onResume,
 }: SessionListProps) {
   // 加载中状态
   if (loading) {
@@ -86,6 +89,7 @@ export function SessionList({
             session={session}
             isSelected={index === selectedIndex}
             homedir={homedir}
+            onResume={onResume}
           />
         ))}
       </div>
