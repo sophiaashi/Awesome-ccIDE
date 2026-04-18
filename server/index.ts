@@ -2,7 +2,7 @@
 import express from 'express'
 import { loadAllSessions } from './sessions.js'
 import { resumeSession } from './terminal.js'
-import { applyLayout, getTerminalStatus } from './layout.js'
+import { applyLayout, getTerminalStatus, focusWindow } from './layout.js'
 import type { LayoutType } from './layout.js'
 
 const app = express()
@@ -66,15 +66,58 @@ app.post('/api/layout', async (req, res) => {
   }
 })
 
-// API：获取当前终端窗口状态
+// API：获取当前终端窗口状态（增强版：关联 session 数据）
 app.get('/api/terminal-status', async (_req, res) => {
   try {
     const status = await getTerminalStatus()
+
+    // 尝试将终端窗口关联到 session 数据
+    try {
+      const sessionData = await loadAllSessions()
+      const sessionMap = new Map(
+        sessionData.sessions.map(s => [s.sessionId, s])
+      )
+
+      // 为每个匹配到 sessionId 的终端窗口补充 session 信息
+      for (const terminal of status.terminals) {
+        if (terminal.sessionId && sessionMap.has(terminal.sessionId)) {
+          const session = sessionMap.get(terminal.sessionId)!
+          terminal.firstPrompt = session.firstPrompt
+          terminal.summary = session.summary
+          terminal.projectName = session.projectName
+          terminal.projectPath = session.projectPath
+        }
+      }
+    } catch {
+      // session 数据加载失败不影响终端状态返回
+    }
+
     res.json(status)
   } catch (err) {
     console.error('获取终端状态失败:', err)
     const message = err instanceof Error ? err.message : '未知错误'
     res.status(500).json({ error: `获取终端状态失败: ${message}` })
+  }
+})
+
+// API：将指定终端窗口置顶
+app.post('/api/focus-window', async (req, res) => {
+  try {
+    const { windowId, sessionId } = req.body
+
+    // 参数校验：至少需要 windowId 或 sessionId 之一
+    if ((!windowId || typeof windowId !== 'string') &&
+        (!sessionId || typeof sessionId !== 'string')) {
+      res.status(400).json({ error: '缺少有效的 windowId 或 sessionId' })
+      return
+    }
+
+    const result = await focusWindow({ windowId, sessionId })
+    res.json(result)
+  } catch (err) {
+    console.error('窗口置顶失败:', err)
+    const message = err instanceof Error ? err.message : '未知错误'
+    res.status(500).json({ error: `窗口置顶失败: ${message}` })
   }
 })
 

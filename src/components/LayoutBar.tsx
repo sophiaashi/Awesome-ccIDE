@@ -93,7 +93,29 @@ const LAYOUTS: LayoutConfig[] = [
   },
 ]
 
-export function LayoutBar() {
+/**
+ * 全屏模式图标
+ */
+function FullscreenIcon({ active }: { active: boolean }) {
+  const color = active ? '#FFFFFF' : 'var(--text-secondary)'
+  return (
+    <svg width="18" height="14" viewBox="0 0 18 14" fill="none">
+      {/* 侧边栏 */}
+      <rect x="0.5" y="0.5" width="5" height="13" rx="1" stroke={color} strokeWidth="1" fill={active ? 'rgba(255,255,255,0.3)' : 'none'} />
+      {/* 主区域 */}
+      <rect x="7" y="0.5" width="10.5" height="13" rx="1" stroke={color} strokeWidth="1" fill="none" />
+    </svg>
+  )
+}
+
+interface LayoutBarProps {
+  /** 是否处于全屏模式 */
+  isFullscreen?: boolean
+  /** 切换全屏模式 */
+  onToggleFullscreen?: () => void
+}
+
+export function LayoutBar({ isFullscreen = false, onToggleFullscreen }: LayoutBarProps) {
   // 当前激活的布局
   const [activeLayout, setActiveLayout] = useState<LayoutType | null>(null)
   // 正在加载的布局（点击后等待 API 响应）
@@ -215,6 +237,38 @@ export function LayoutBar() {
           )
         })}
       </div>
+
+      {/* 分隔线 */}
+      <div
+        className="h-4 w-px"
+        style={{ backgroundColor: 'var(--border)' }}
+      />
+
+      {/* 全屏模式按钮 */}
+      <button
+        onClick={onToggleFullscreen}
+        title={isFullscreen ? '退出全屏 (Esc)' : '全屏模式'}
+        className="flex items-center justify-center cursor-pointer transition-all duration-150"
+        style={{
+          width: '32px',
+          height: '32px',
+          backgroundColor: isFullscreen ? 'var(--accent)' : 'transparent',
+          border: '1px solid var(--border)',
+          borderRadius: 'var(--radius-sm)',
+        }}
+        onMouseEnter={(e) => {
+          if (!isFullscreen) {
+            e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)'
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (!isFullscreen) {
+            e.currentTarget.style.backgroundColor = 'transparent'
+          }
+        }}
+      >
+        <FullscreenIcon active={isFullscreen} />
+      </button>
 
       {/* 提示信息 toast */}
       {toast && (

@@ -15,13 +15,15 @@ interface UseKeyboardOptions {
   itemCount: number
   /** 按 Enter 时的回调 */
   onEnter?: (index: number) => void
+  /** 按 Escape 时的回调（优先于默认的 blur 行为） */
+  onEscape?: () => void
 }
 
 /**
  * 键盘导航 hook
  * 支持 ⌘K 聚焦搜索框、↑↓ 导航列表、Enter 确认
  */
-export function useKeyboard({ itemCount, onEnter }: UseKeyboardOptions): UseKeyboardReturn {
+export function useKeyboard({ itemCount, onEnter, onEscape }: UseKeyboardOptions): UseKeyboardReturn {
   const [selectedIndex, setSelectedIndex] = useState(-1)
   const searchInputRef = useRef<HTMLInputElement | null>(null)
 
@@ -65,12 +67,17 @@ export function useKeyboard({ itemCount, onEnter }: UseKeyboardOptions): UseKeyb
       return
     }
 
-    // Escape 键：清空搜索框
+    // Escape 键：优先退出全屏模式，其次 blur 搜索框
     if (e.key === 'Escape') {
-      searchInputRef.current?.blur()
+      if (onEscape) {
+        e.preventDefault()
+        onEscape()
+      } else {
+        searchInputRef.current?.blur()
+      }
       return
     }
-  }, [itemCount, selectedIndex, onEnter])
+  }, [itemCount, selectedIndex, onEnter, onEscape])
 
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown)

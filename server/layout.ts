@@ -15,12 +15,24 @@ interface LayoutResult {
 interface TerminalWindow {
   windowId: string
   title: string
+  /** 从窗口标题/命令中提取的 sessionId（如果是 claude session） */
+  sessionId?: string
+  /** 关联的 session firstPrompt 摘要 */
+  firstPrompt?: string
+  /** 关联的 session summary */
+  summary?: string
+  /** 关联的项目名 */
+  projectName?: string
+  /** 关联的项目路径 */
+  projectPath?: string
 }
 
 /** 终端状态返回结果 */
 interface TerminalStatus {
   terminals: TerminalWindow[]
   terminalApp: 'Terminal.app' | 'iTerm2'
+  /** 当前最前面的窗口 ID */
+  frontmostWindowId?: string
 }
 
 /**
@@ -255,15 +267,105 @@ end tell`
 }
 
 /**
+ * 从窗口标题中提取 claude session ID
+ * 窗口标题可能包含 "claude --resume <sessionId>" 或类似格式
+ */
+function extractSessionId(title: string): string | undefined {
+  // 匹配 claude --resume <uuid> 格式
+  const resumeMatch = title.match(/claude\s+--resume\s+([0-9a-f-]{36})/i)
+  if (resumeMatch) return resumeMatch[1]
+
+  // 匹配窗口标题中的 UUID（claude session 的 UUID 格式）
+  const uuidMatch = title.match(/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i)
+  if (uuidMatch) return uuidMatch[1]
+
+  return undefined
+}
+
+/**
+ * 获取当前最前面的终端窗口 ID
+ */
+async function getFrontmostWindowId(appName: string): Promise<string | undefined> {
+  const script = `
+tell application "${appName}"
+  try
+    return id of front window as text
+  on error
+    return ""
+  end try
+end tell`
+
+  try {
+    const result = await runAppleScript(script)
+    return result || undefined
+  } catch {
+    return undefined
+  }
+}
+
+/**
  * 获取当前终端窗口状态
+ * 尝试匹配每个窗口关联的 claude session
  */
 export async function getTerminalStatus(): Promise<TerminalStatus> {
   const terminalApp = await detectTerminalApp()
   const appName = terminalApp === 'iTerm2' ? 'iTerm2' : 'Terminal'
   const windows = await getTerminalWindows(appName)
+  const frontmostWindowId = await getFrontmostWindowId(appName)
+
+  // 尝试从窗口标题中提取 sessionId
+  for (const w of windows) {
+    const sessionId = extractSessionId(w.title)
+    if (sessionId) {
+      w.sessionId = sessionId
+    }
+  }
 
   return {
     terminals: windows,
     terminalApp,
+    frontmostWindowId,
   }
+}
+
+/**
+ * 将指定终端窗口置顶显示
+ * 支持通过 windowId 或 sessionId 定位窗口
+ */
+export async function focusWindow(options: { windowId?: string; sessionId?: string }): Promise<{ success: boolean }> {
+  const terminalApp = await detectTerminalApp()
+  const appName = terminalApp === 'iTerm2' ? 'iTerm2' : 'Terminal'
+
+  let targetWindowId = options.windowId
+
+  // 如果传的是 sessionId，先找到对应窗口
+  if (!targetWindowId && options.sessionId) {
+    const windows = await getTerminalWindows(appName)
+    for (const w of windows) {
+      const sid = extractSessionId(w.title)
+      if (sid === options.sessionId) {
+        targetWindowId = w.windowId
+        break
+      }
+    }
+
+    if (!targetWindowId) {
+      throw new Error('未找到该 session 对应的终端窗口')
+    }
+  }
+
+  if (!targetWindowId) {
+    throw new Error('缺少 windowId 或 sessionId')
+  }
+
+  // AppleScript 将窗口置顶
+  const script = `
+tell application "${appName}"
+  activate
+  set index of window id ${targetWindowId} to 1
+end tell`
+
+  await runAppleScript(script)
+
+  return { success: true }
 }

@@ -53,13 +53,33 @@
 - [x] 前端：无终端窗口时友好提示 toast
 - [x] 前端：FilterBar + LayoutBar 集成到同一行
 
+### Sprint 5：全屏 + 侧边栏模式
+- [x] 后端：GET /api/terminal-status 增强 — 返回 frontmostWindowId，尝试从窗口标题提取 sessionId 并关联 session 数据（firstPrompt/summary/projectName/projectPath）
+- [x] 后端：POST /api/focus-window API — 接收 windowId 或 sessionId，通过 AppleScript 将指定终端窗口置顶（set index of window to 1）
+- [x] 后端：extractSessionId() 从窗口标题中提取 UUID 格式的 session ID
+- [x] 后端：getFrontmostWindowId() 获取当前最前面的终端窗口 ID
+- [x] 后端：完整的参数校验和错误处理
+- [x] 前端：LayoutBar 新增「全屏模式」按钮（侧边栏+主区域 SVG 图标，与布局按钮组并排）
+- [x] 前端：Sidebar 组件（280px 宽，背景 --bg-secondary）
+  - 顶部工具栏：收起按钮 + "终端窗口" 标题 + 窗口数量标签 + 关闭按钮
+  - 搜索框过滤已打开的终端 session
+  - 列表项紧凑模式（行高 40px），显示 firstPrompt 摘要 + 项目名 + 左侧颜色竖条
+  - 点击 → 调用 POST /api/focus-window 将窗口置顶
+  - 当前活跃窗口高亮（背景 --bg-active，左侧竖条变亮）
+  - 点击时显示 spinner 加载动画
+  - 收起状态：48px 窄竖条 + 圆点图标列表
+  - 展开/收起动画 200ms ease-out
+- [x] 前端：全屏模式切换（列表视图 ↔ 全屏+侧边栏视图）
+  - 全屏模式下隐藏 session 列表和顶部栏，显示侧边栏 + 主区域占位
+  - 主区域显示 Logo + 操作提示 + 快捷键说明
+- [x] 前端：Escape 键退出全屏模式（useKeyboard hook 新增 onEscape 回调）
+- [x] 前端：每 3 秒轮询终端状态，实时更新侧边栏列表和活跃窗口高亮
+
 ## 下一个 Sprint
 
-### Sprint 5：全屏 + 侧边栏模式
-- [ ] 后端：获取当前终端窗口列表，识别哪些是 claude session
-- [ ] 后端：AppleScript 将指定窗口全屏/置顶
-- [ ] 前端：全屏模式切换按钮
-- [ ] 前端：侧边栏组件 — 显示已打开的终端 session 列表
-- [ ] 前端：点击侧边栏条目 → 调用 API 将对应终端窗口置顶
-- [ ] 前端：当前活跃窗口在侧边栏中高亮
-- [ ] 侧边栏可收起/展开
+### Sprint 6：集成测试与收尾
+- [ ] 搜索 → Resume 流程端到端测试
+- [ ] 多窗口布局流程测试
+- [ ] 全屏切换流程测试
+- [ ] 数据完整性验证
+- [ ] 边界情况测试
