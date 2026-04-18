@@ -3,7 +3,7 @@ import express from 'express'
 import { loadAllSessions } from './sessions.js'
 
 const app = express()
-const PORT = 3456
+const PORT = 3457
 
 app.use(express.json())
 
@@ -20,5 +20,5 @@ app.get('/api/sessions', async (_req, res) => {
 
 // 启动服务
 app.listen(PORT, () => {
-  console.log(`🚀 Session Manager API 运行在 http://localhost:${PORT}`)
+  console.log(`Session Manager API 运行在 http://localhost:${PORT}`)
 })
