@@ -101,19 +101,28 @@ export function SessionItem({
       className={`session-card group ml-5 mr-4 mb-1.5 cursor-pointer ${isSelected ? 'selected' : ''}`}
     >
       <div className="flex items-stretch">
-        {/* 项目色条 + 打开状态 */}
-        <div className="w-[3px] shrink-0 rounded-l-lg relative" style={{
+        {/* 项目色条 */}
+        <div className="w-[3px] shrink-0 rounded-l-lg" style={{
           backgroundColor: isActive ? 'var(--accent)' : isOpen ? 'var(--success)' : color,
-          opacity: isActive ? 1 : isOpen ? 0.9 : isSelected ? 1 : 0.5,
-        }}>
-          {isOpen && (
-            <div className="absolute top-2 left-[-1px] w-[5px] h-[5px] rounded-full" style={{
-              backgroundColor: isActive ? 'var(--accent)' : 'var(--success)',
-            }} />
-          )}
-        </div>
+          opacity: isActive ? 1 : isOpen ? 1 : isSelected ? 1 : 0.5,
+        }} />
 
         <div className="flex-1 min-w-0 py-3" style={{ paddingLeft: '14px', paddingRight: '14px' }}>
+          {/* 已打开/激活状态标签 */}
+          {isOpen && (
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <span className="inline-block w-[6px] h-[6px] rounded-full" style={{
+                backgroundColor: isActive ? 'var(--accent)' : 'var(--success)',
+                boxShadow: isActive ? '0 0 6px var(--accent)' : '0 0 6px var(--success)',
+              }} />
+              <span className="text-[10px] font-[590] uppercase tracking-wide" style={{
+                color: isActive ? 'var(--accent)' : 'var(--success)',
+              }}>
+                {isActive ? '当前' : '运行中'}
+              </span>
+            </div>
+          )}
+
           {/* 行1：名称 + 时间 + Resume */}
           <div className="flex items-center justify-between gap-2 mb-1">
             <div className="flex items-center gap-1.5 min-w-0 flex-1">
@@ -172,12 +181,17 @@ export function SessionItem({
               ) : (
                 <button
                   onClick={e => { e.stopPropagation(); resume() }}
-                  className="resume-btn tag cursor-pointer"
-                  style={{ background: 'var(--accent)', color: '#fff', fontWeight: 590 }}
-                  onMouseEnter={e => { e.currentTarget.style.background = 'var(--accent-hover)' }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'var(--accent)' }}
+                  className={isOpen ? 'tag cursor-pointer' : 'resume-btn tag cursor-pointer'}
+                  style={{
+                    background: isOpen ? 'rgba(255,255,255,0.05)' : 'var(--accent)',
+                    color: isOpen ? 'var(--text-secondary)' : '#fff',
+                    fontWeight: 590,
+                    border: isOpen ? '1px solid var(--border)' : 'none',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = isOpen ? 'rgba(255,255,255,0.08)' : 'var(--accent-hover)' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = isOpen ? 'rgba(255,255,255,0.05)' : 'var(--accent)' }}
                 >
-                  Resume
+                  {isOpen ? '切换' : 'Resume'}
                 </button>
               )}
               <span className="text-[11px] font-[510] tabular-nums" style={{ color: 'var(--text-muted)', fontFamily: "'SF Mono', monospace" }}>

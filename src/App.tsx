@@ -168,7 +168,7 @@ export default function App() {
       <div
         className="flex flex-col shrink-0 relative"
         style={{
-          width: leftPanelCollapsed ? '48px' : `${sidebarWidth}px`,
+          width: leftPanelCollapsed ? '80px' : `${sidebarWidth}px`,
           backgroundColor: 'var(--bg-secondary)',
           transition: leftPanelCollapsed ? 'width 0.2s ease' : 'none',
           overflow: 'hidden',
