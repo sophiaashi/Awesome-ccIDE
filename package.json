@@ -1,7 +1,7 @@
 {
-  "name": "claude-session-manager",
+  "name": "ccide",
   "version": "1.0.0",
-  "description": "Claude Session Manager - 管理和搜索 Claude Code sessions",
+  "description": "ccIDE - 管理和搜索 Claude Code sessions",
   "type": "module",
   "main": "dist-electron/electron/main.cjs",
   "scripts": {
@@ -46,7 +46,7 @@
   },
   "build": {
     "appId": "com.claude.session-manager",
-    "productName": "Claude Session Manager",
+    "productName": "ccIDE",
     "mac": {
       "category": "public.app-category.developer-tools",
       "target": "dmg",

@@ -33,7 +33,7 @@ function createWindow(): void {
     height: 900,
     minWidth: 900,
     minHeight: 600,
-    title: 'Claude Session Manager',
+    title: 'ccIDE',
     titleBarStyle: 'hiddenInset', // macOS 原生标题栏样式
     trafficLightPosition: { x: 16, y: 18 },
     backgroundColor: '#0a0e14',
