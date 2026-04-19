@@ -1,6 +1,6 @@
 // Express 服务入口
 import express from 'express'
-import { loadAllSessions } from './sessions.js'
+import { loadAllSessions, fullTextSearch } from './sessions.js'
 import { resumeSession } from './terminal.js'
 import { applyLayout, getTerminalStatus, focusWindow } from './layout.js'
 import type { LayoutType } from './layout.js'
@@ -18,6 +18,29 @@ app.get('/api/sessions', async (_req, res) => {
   } catch (err) {
     console.error('加载 session 数据失败:', err)
     res.status(500).json({ error: '无法加载 session 数据' })
+  }
+})
+
+// API：全文搜索 — 搜索所有 session 历史记录中的用户输入
+app.get('/api/search', async (req, res) => {
+  try {
+    const query = (req.query.q as string || '').trim()
+    if (!query) {
+      res.json({ results: {} })
+      return
+    }
+
+    const matchMap = await fullTextSearch(query)
+    // Map → plain object
+    const results: Record<string, { text: string; highlight: string }[]> = {}
+    for (const [sessionId, matches] of matchMap) {
+      results[sessionId] = matches
+    }
+
+    res.json({ results })
+  } catch (err) {
+    console.error('搜索失败:', err)
+    res.status(500).json({ error: '搜索失败' })
   }
 })
 

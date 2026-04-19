@@ -27,6 +27,7 @@ export default function App() {
     setSortMode,
     filteredSessions,
     filteredCount,
+    searchMatches,
   } = useSearch(sessions)
 
   /**
@@ -252,6 +253,8 @@ export default function App() {
           onResume={handleResume}
           keyboardResumeId={keyboardResumeId}
           onKeyboardResumeHandled={() => setKeyboardResumeId(null)}
+          searchMatches={searchMatches}
+          searchQuery={query}
         />
       </main>
     </div>

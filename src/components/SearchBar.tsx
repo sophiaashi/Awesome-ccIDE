@@ -28,14 +28,16 @@ export function SearchBar({
         className="absolute left-3 pointer-events-none"
         width="16"
         height="16"
-        viewBox="0 0 16 16"
+        viewBox="0 0 24 24"
         fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
         style={{ color: 'var(--text-muted)' }}
       >
-        <path
-          d="M11.5 7a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM10.646 11.354a6 6 0 1 1 .708-.708l3.5 3.5a.5.5 0 0 1-.708.708l-3.5-3.5Z"
-          fill="currentColor"
-        />
+        <circle cx="11" cy="11" r="8" />
+        <line x1="21" y1="21" x2="16.65" y2="16.65" />
       </svg>
 
       {/* 输入框 */}

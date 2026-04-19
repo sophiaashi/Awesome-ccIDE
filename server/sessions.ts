@@ -1,5 +1,7 @@
 // Session 数据读取模块
-import { readFileSync } from 'fs'
+import { readFileSync, existsSync } from 'fs'
+import { createReadStream } from 'fs'
+import { createInterface } from 'readline'
 import { glob } from 'glob'
 import path from 'path'
 import os from 'os'
@@ -124,4 +126,102 @@ export async function loadAllSessions(): Promise<{
     projects,
     homedir: homeDir,
   }
+}
+
+/** 搜索结果中匹配的文本片段 */
+export interface SearchMatch {
+  text: string        // 包含关键词的那句话
+  highlight: string   // 高亮位置的上下文片段
+}
+
+/** 搜索结果 */
+export interface SearchResult {
+  sessionId: string
+  matches: SearchMatch[]  // 匹配到的文本片段（最多3条）
+}
+
+/**
+ * 从 history.jsonl 构建搜索索引
+ * history.jsonl 每行格式: { display: "用户输入", sessionId: "uuid", timestamp: number, ... }
+ * 轻量高效：568K，2000+ 行
+ */
+let historyIndex: { display: string; sessionId: string }[] | null = null
+
+async function loadHistoryIndex(): Promise<{ display: string; sessionId: string }[]> {
+  if (historyIndex) return historyIndex
+
+  const historyPath = path.join(os.homedir(), '.claude', 'history.jsonl')
+  if (!existsSync(historyPath)) {
+    historyIndex = []
+    return historyIndex
+  }
+
+  const entries: { display: string; sessionId: string }[] = []
+
+  const fileStream = createReadStream(historyPath, 'utf-8')
+  const rl = createInterface({ input: fileStream, crlfDelay: Infinity })
+
+  for await (const line of rl) {
+    try {
+      const data = JSON.parse(line)
+      if (data.display && data.sessionId) {
+        entries.push({
+          display: data.display,
+          sessionId: data.sessionId,
+        })
+      }
+    } catch {
+      // 跳过解析失败的行
+    }
+  }
+
+  historyIndex = entries
+  return historyIndex
+}
+
+/**
+ * 全文搜索：在 history.jsonl 的所有用户输入中搜索关键词
+ * 返回匹配的 sessionId 及包含关键词的文本片段
+ */
+export async function fullTextSearch(
+  query: string
+): Promise<Map<string, SearchMatch[]>> {
+  const lowerQuery = query.toLowerCase()
+  const index = await loadHistoryIndex()
+  const resultMap = new Map<string, SearchMatch[]>()
+
+  for (const entry of index) {
+    const lowerDisplay = entry.display.toLowerCase()
+    if (lowerDisplay.includes(lowerQuery)) {
+      // 提取包含关键词的上下文片段（前后各50字符）
+      const pos = lowerDisplay.indexOf(lowerQuery)
+      const start = Math.max(0, pos - 40)
+      const end = Math.min(entry.display.length, pos + query.length + 40)
+      const snippet = (start > 0 ? '...' : '') +
+        entry.display.slice(start, end) +
+        (end < entry.display.length ? '...' : '')
+
+      const match: SearchMatch = {
+        text: entry.display.length > 120
+          ? entry.display.slice(0, 120) + '...'
+          : entry.display,
+        highlight: snippet,
+      }
+
+      const existing = resultMap.get(entry.sessionId) || []
+      if (existing.length < 3) {  // 每个 session 最多保留 3 条匹配
+        existing.push(match)
+        resultMap.set(entry.sessionId, existing)
+      }
+    }
+  }
+
+  return resultMap
+}
+
+/**
+ * 使搜索索引失效（用于数据更新时）
+ */
+export function invalidateSearchIndex(): void {
+  historyIndex = null
 }

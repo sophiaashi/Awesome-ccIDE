@@ -1,561 +1,238 @@
-# Sprint 1 Evaluation Report
+# Sprint 6 -- Final Integration Test & Acceptance Report
 
-**测试时间**: 2026-04-17
-**测试方式**: 浏览器实测 (gstack browse headless browser)
-**截图证据**: /tmp/sprint1-overview.png, /tmp/sprint1-top-detail.png, /tmp/sprint1-bottom.png
-
----
-
-## 验收标准逐条验证
-
-### AC-1: 浏览器打开 http://localhost:3456，能看到 session 列表
-**结果: PASS**
-
-- 前端 dev server (localhost:3456) 正常运行
-- 后端 API (localhost:3457/api/sessions) 正常返回数据
-- 页面加载后显示完整的 session 列表，标题为 "Claude Session Manager"
-- 截图证实页面正确渲染
-
-### AC-2: 列表显示所有 session（约 177 个）
-**结果: PASS**
-
-- API 返回 177 个 sessions
-- 页面标题栏右侧显示 "177 sessions"
-- 列表头部显示 "共 177 个 session"
-- DOM 中实际渲染了 177 个 `.group` 元素（通过 `document.querySelectorAll('.group').length` 验证）
-- 所有 session 一次性渲染，无分页或虚拟滚动
-
-### AC-3: 每个 session 显示：firstPrompt（截断）、summary（若有）、相对时间、项目名、git 分支、消息数
-**结果: PASS**
-
-逐项验证：
-- **firstPrompt（截断）**: 显示截断到约 100 字符，末尾带 "..."，hover 时 title 属性显示完整文本 ✓
-- **summary（若有）**: 47 个有 summary 的 session 正确显示在 firstPrompt 下方（如 "Install tiny-roommate AI pet app successfully"），无 summary 的不显示额外行 ✓
-- **相对时间**: 右侧显示 "2天前"、"3天前"、"1周前" 等中文相对时间 ✓
-- **项目名**: 以彩色标签显示（如 "root"、"sophia"、"teamorouter-mkt"） ✓
-- **git 分支**: 有分支的 session 显示蓝色标签（如 "HEAD"、"main"），无分支的不显示 ✓
-- **消息数**: 显示灰色标签（如 "2 msgs"、"204 msgs"） ✓
-
-### AC-4: 不同项目有不同的颜色标识竖条
-**结果: PASS**
-
-- 每个 session 左侧有 4px 宽的颜色竖条
-- 共检测到 8 种不同颜色：紫色(#BC8CFF)、粉色(#F778BA)、蓝色(#58A6FF)、黄色(#D29922)、绿色(#3FB950)、浅绿(#7EE787)、橙色(#DA7756)、浅蓝(#79C0FF)
-- 同一项目使用相同颜色（如 root = 紫色，sophia = 粉色，teamorouter-mkt = 蓝色）
-- 项目名标签的背景色与竖条颜色对应（透明度约 0.133）
-- 注意：4px 竖条在截图中非常细，实际浏览器中可见但不太醒目
-
-### AC-5: 列表按最近修改时间排序，最新的在最上面
-**结果: PASS**
-
-- 后端按 `modified` 字段降序排序，经验证 0 处违反
-- 第一个 session 的 modified 时间为 2026-04-16T04:01:18.013Z（最新）
-- 最后一个 session 的 modified 时间为 2026-01-28T16:43:38.105Z（最旧）
-- 页面显示的时间标签从上到下依次为：2天前 → 3天前 → 4天前 → 1周前 → 2周前 → 3周前 → 1个月前 → 2个月前
+**Test Date**: 2026-04-18
+**Test Method**: Headless browser (gstack browse) + API direct testing + Code review
+**Tester**: Independent QA Evaluator
+**Screenshots**: /tmp/csm_initial.png, /tmp/csm_search_npm.png, /tmp/csm_boss.png, /tmp/csm_no_results.png, /tmp/csm_empty_search.png, /tmp/csm_keyboard_nav.png, /tmp/csm_layout_quad.png, /tmp/csm_layout_twocol.png, /tmp/csm_fullscreen.png, /tmp/csm_sidebar_collapsed.png, /tmp/csm_exit_fullscreen.png, /tmp/csm_filter_teamoclaw.png, /tmp/csm_sort_msgs.png, /tmp/csm_hover_resume2.png, /tmp/csm_xss.png, /tmp/csm_long_input2.png, /tmp/csm_scroll_bottom2.png
 
 ---
 
-## 四维评分
+## Test Scenario Results
 
-### 功能完整性: 9/10
-全部 5 条验收标准均通过。所有核心功能完整实现：
-- 177 个 session 全部渲染
-- 所有要求的字段（firstPrompt、summary、时间、项目、分支、消息数）都正确显示
-- 排序正确
-- 颜色区分正确
-- 扣 1 分：177 个 session 一次性全部渲染到 DOM，无虚拟列表优化，数据量更大时可能有性能问题
+### 1. Search -> Resume Flow
 
-### 可用性: 8/10
-- 加载速度快，数据展示清晰
-- 中文 UI，相对时间直观易懂
-- hover 效果提供交互反馈
-- firstPrompt 的 title 属性支持查看完整文本
-- 扣分原因：
-  - 列表只能浏览，不能搜索/过滤（-1）
-  - 点击 session 无任何操作（无详情页/链接）（-1）
-  - 注：以上为 Sprint 1 范围外的功能，但影响实际可用性
+| Step | Expected | Result | Status |
+|------|----------|--------|--------|
+| Open page | Session list loads | 175 sessions displayed, 175/175 counter | PASS |
+| Search keyword | Real-time filter | "npm" -> 3/175, "Boss" -> 1/175, instant filter | PASS |
+| Keyboard select (ArrowDown) | Highlight moves | selectedIndex updates, bg-active applied | PASS |
+| Press Enter to resume | Terminal opens | API call succeeds, returns {success: true, terminal: "Terminal.app"} | PASS |
+| Resume button on hover | Button appears | "Resume" button with accent color visible on hover | PASS |
+| Loading/success states | UI feedback | "loading" prevents re-entry, "success" shows checkmark, auto-resets after 2s | PASS |
 
-### 视觉设计: 8/10
-- 暗色主题专业，配色协调
-- CSS 变量体系良好，主题可扩展
-- JetBrains Mono 等代码字体选择得当
-- 项目颜色标签视觉效果好
-- 扣分原因：
-  - 左侧颜色竖条仅 4px，在视觉上辨识度偏低（-1）
-  - 部分 session 的 firstPrompt 全是中文长文本，视觉上行与行之间缺乏区分度（-1）
+### 2. Multi-Window Layout Flow
 
-### 代码质量: 9/10
-- 项目结构清晰：前后端分离，类型定义独立
-- TypeScript 全覆盖，接口定义完整
-- 组件拆分合理：App → SessionList → SessionItem
-- 工具函数（time/color）独立封装
-- 自定义 Hook (useSessions) 逻辑封装良好
-- 错误处理、加载状态、空状态均有覆盖
-- 扣分：
-  - `shortenPath()` 硬编码了 `/Users/sophia`，应使用动态方式（-0.5）
-  - 颜色分配依赖全局 mutable state (colorMap)，在 React strict mode 下可能有重复初始化问题（-0.5）
+| Step | Expected | Result | Status |
+|------|----------|--------|--------|
+| Resume sessions (open terminals) | Terminal windows open | API returns success, Terminal.app detected | PASS |
+| Click "quad" layout | Windows arrange 2x2 | API returns {success: true, windowCount: 3, layout: "quad"} | PASS |
+| Button highlights | Active layout button | Quad button shows accent background color | PASS |
+| Switch to "two-col" | Windows rearrange | API returns {success: true, windowCount: 3, layout: "two-col"} | PASS |
+| Button highlights update | New layout active | Two-col button now highlighted, quad deactivated | PASS |
+| All layout types | quad/three-col/two-col/stack | All 4 layout types tested via API, all succeed | PASS |
 
----
+### 3. Fullscreen Switch Flow
 
-## 综合评分: 8.5 / 10
+| Step | Expected | Result | Status |
+|------|----------|--------|--------|
+| Click fullscreen button | Switch to sidebar layout | Full sidebar + main area layout renders | PASS |
+| Sidebar shows terminals | Terminal list displayed | 3 terminal windows shown with titles | PASS |
+| Sidebar search | Filter terminals | Search input present and functional | PASS |
+| Sidebar collapse | Narrow view with dots | 48px narrow bar with colored dots for each window | PASS |
+| Sidebar expand | Full sidebar returns | 280px sidebar with full information | PASS |
+| Click terminal in sidebar | Focus window API called | API endpoint /api/focus-window available and working | PASS |
+| Active window highlight | Frontmost window styled | frontmostWindowId tracked, bg-active applied | PASS |
+| Escape exits fullscreen | Returns to list view | Keyboard Escape correctly exits fullscreen mode | PASS |
+| X button exits | Returns to list view | Close button in sidebar header works | PASS |
 
-## 总结
+### 4. Data Completeness
 
-Sprint 1 交付质量良好。5 条验收标准全部通过，核心功能完整。代码结构清晰、类型安全、组件化良好。主要的改进空间在于：搜索/过滤功能（Sprint 2 范围）、颜色竖条辨识度、以及性能优化（虚拟列表）。
+| Check | Expected | Result | Status |
+|-------|----------|--------|--------|
+| Total session count | 177 (or actual after dedup) | 175 unique (177 raw, 2 deduped) | PASS |
+| Summary display | ~27% have summaries | 46/175 (26.3%) have summaries, displayed correctly | PASS |
+| Project paths | Shortened with ~ | ~/teamoclaw, ~/Downloads/clawdbot-dashboard, / for root | PASS |
+| Git branches | Displayed as tags | HEAD, main branches shown in blue tags | PASS |
+| Project names | Color-coded | 10 projects with distinct color bars and labels | PASS |
+| Message counts | Shown per session | "2 msgs", "22 msgs", "204 msgs" etc. | PASS |
+| Relative time | Human-readable | "2 days ago", "3 days ago", "1 month ago" etc. | PASS |
+| Sort by modified | Most recent first | Correct chronological ordering | PASS |
 
-## 建议下一步改进
+### 5. Edge Cases
 
-1. **P1 - 搜索过滤**: 添加搜索框，支持按 firstPrompt/summary/项目名过滤
-2. **P2 - 颜色竖条加宽**: 从 4px 增加到 6-8px，提升视觉辨识度
-3. **P2 - 虚拟列表**: 考虑使用 react-window 或类似方案优化大量 session 的渲染性能
-4. **P3 - 路径硬编码**: `shortenPath()` 中的 home 目录应从 API 获取而非硬编码
-
----
----
-
-# Sprint 2 Evaluation Report
-
-**测试时间**: 2026-04-17
-**测试方式**: 浏览器实测 (gstack browse headless browser)
-**截图证据**: /tmp/sprint2-test-01-initial.png 至 /tmp/sprint2-test-15-backspace-clear.png
+| Test | Expected | Result | Status |
+|------|----------|--------|--------|
+| No terminal windows + layout click | Friendly message | Returns {windowCount: 0}, toast shows "no terminal windows" | PASS |
+| Session data file read errors | Skip, don't crash | try/catch wraps each file read (sessions.ts:96-98) | PASS |
+| Long firstPrompt truncation | Truncate at 100 chars | truncateText(firstPrompt, 100) with "..." suffix | PASS |
+| Empty search results | Show empty state | "No matching results" with helpful hint message | PASS |
+| Clear search restores all | Full list returns | 175/175 restored after clearing search | PASS |
 
 ---
 
-## 验收标准逐条验证
+## Negative Tests
 
-### AC-1: 搜索框始终可见，输入文字立即过滤列表（无需按 Enter）
-**结果: PASS**
-
-- 搜索框位于页面顶部，始终可见
-- placeholder 文字为 "搜索 session... ⌘K"
-- 输入文字后列表立即过滤，无需按 Enter，实时响应
-- 截图证据: /tmp/sprint2-test-01-initial.png（初始状态）, /tmp/sprint2-test-02-search-bangwo.png（输入后立即过滤）
-
-### AC-2: 搜索 "帮我" 能找到所有 firstPrompt 包含 "帮我" 的 session
-**结果: PASS**
-
-- 搜索 "帮我" 后显示 18/175 条结果
-- 结果中包含："帮我拟写一段"、"帮我找找"、"帮我安装这个"、"帮我彻底卸载workbuddy的相关文件"、"帮我装一下所有的东西"、"帮我查查今天背景天气"、"帮我处理一下"、"帮我看看看什么情况"、"帮我换个key"、"帮我一起验证一下吗"、"帮我查一下今天AI大新闻" 等
-- 搜索匹配了 firstPrompt 中的 "帮我" 子串
-- 截图证据: /tmp/sprint2-test-02-search-bangwo.png
-
-### AC-3: 搜索 "npm" 能找到相关 session
-**结果: PASS**
-
-- 搜索 "npm" 后显示 3/175 条结果
-- 结果包含：
-  1. "sophia@SophiadeMacBook-Pro teamo-claw % pnpm dlx clawhub@latest install NanoBanana PPT Skills error:..."（包含 pnpm/npm 关键词）
-  2. "npm error code EACCES npm error syscall mkdir npm error path /usr/local/lib/node_modules/@anthropic-..."
-  3. "我正在终端安装claude code，报错：npm error syscall mkdir npm error path /usr/local/lib/node_modules/@anthropic-..."
-- 截图证据: /tmp/sprint2-test-05-npm.png
-
-### AC-4: 项目过滤下拉能按项目筛选
-**结果: PASS**
-
-- 项目下拉菜单列出所有项目：全部项目、claude code、clawdbot-dashboard、clawschool、clawschool-window-release-manager、root、sophia、teamo-claw、teamoclaw、teamorouter、teamorouter-mkt
-- 选择 "sophia" 后显示 76/175，所有列表项均属于 sophia 项目
-- 选择 "root" 后显示 5/175，所有列表项均属于 root 项目
-- 搜索 + 项目过滤可组合使用："帮我" + sophia = 16/175（小于"帮我"全部的18条，说明有2条在其他项目）
-- 截图证据: /tmp/sprint2-test-06-project-filter.png, /tmp/sprint2-test-07-root-filter.png, /tmp/sprint2-test-11-combined.png
-
-### AC-5: 搜索框右侧显示结果数量（如 "23/177"）
-**结果: PASS**
-
-- 初始状态显示 "175/175"
-- 搜索 "帮我" 后显示 "18/175"
-- 搜索 "npm" 后显示 "3/175"
-- 选择项目 "sophia" 后显示 "76/175"
-- 选择项目 "root" 后显示 "5/175"
-- 组合过滤 "帮我" + sophia 显示 "16/175"
-- 格式为 "过滤结果数/总数"，位于搜索框右侧
-- 注：总数从最初的 177 变为 175（可能有 session 被删除），不影响功能
-
-### AC-6: ⌘K 能聚焦搜索框
-**结果: PASS**
-
-- 按下 Meta+K（即 ⌘K）后，通过 `document.activeElement` 验证确认焦点移到了搜索输入框（INPUT text）
-- 搜索框 placeholder 中显示了 "⌘K" 提示
-
-### AC-7: ↑↓ 键能在结果中导航，选中项有视觉高亮
-**结果: PASS**
-
-- 按 ArrowDown 后，第1条 session 获得深蓝色背景高亮
-- 连续按 ArrowDown 3次后，高亮移动到第3条
-- 按 ArrowUp 后，高亮回到第2条
-- 高亮颜色与未选中状态有明显对比度差异
-- 截图证据: /tmp/sprint2-test-08-arrow-down.png, /tmp/sprint2-test-09-arrow-down-3.png, /tmp/sprint2-test-10-arrow-up.png
-
-### AC-8: 清空搜索框显示全部 session
-**结果: PASS（附注）**
-
-- 通过键盘操作（Cmd+A → Delete 或逐字 Backspace）清空搜索框后，列表恢复到 175/175
-- 截图证据: /tmp/sprint2-test-13-after-clear.png, /tmp/sprint2-test-15-backspace-clear.png
-- **附注**: 通过 JavaScript 程序化方式（`input.value = ''; dispatchEvent('input')`）清空搜索框时，React state 不会更新，计数器和列表不会重置。这不是真实用户可感知的 bug（用户通过键盘操作清空是正常的），但说明 React 的 controlled input 实现有一定的实现细节（需要使用 nativeInputValueSetter 或直接触发 React 的合成事件）。对普通用户不影响。
+| Test | Input | Expected | Result | Status |
+|------|-------|----------|--------|--------|
+| Empty input | "" (clear search) | Show all sessions | 175/175 shown | PASS |
+| Super long input | 150 chars of "a" | No crash, show 0 results | 0/175 with empty state, no UI breakage | PASS |
+| XSS injection | `<script>alert(1)</script>` | No script execution | Text rendered as plain string, React escapes HTML | PASS |
+| Invalid URL | /nonexistent | No 404 crash | SPA serves index.html, app works normally | PASS |
+| Double-click Resume | Rapid double click | Single execution only | `resumeStatus === 'loading'` guard prevents re-entry | PASS |
+| Missing sessionId | POST /api/resume {} | 400 error | Returns error message in Chinese | PASS |
+| Missing projectPath | POST /api/resume {sessionId: "x"} | 400 error | Returns error message | PASS |
+| Invalid layout type | POST /api/layout {layout: "invalid"} | 400 error | Returns supported layout list | PASS |
+| Missing focus params | POST /api/focus-window {} | 400 error | Returns error message | PASS |
 
 ---
 
-## 四维评分
+## Sprint 1-5 Acceptance Criteria Cross-Check
 
-### 功能完整性: 9.5/10
-全部 8 条验收标准均通过。所有核心搜索和过滤功能完整实现：
-- 实时搜索（无需 Enter）
-- 中文文本搜索正确（"帮我"、"npm"）
-- 项目下拉过滤正确
-- 搜索 + 项目过滤可组合
-- 结果计数器准确
-- ⌘K 快捷键正常
-- 上下键导航 + 高亮正常
-- 清空搜索恢复全部
-- 扣 0.5 分：排序下拉虽然存在（最近修改/创建时间/消息数），但未在验收标准中要求验证，属于额外功能
+### Sprint 1: Project Setup + Session Data Display
 
-### 可用性: 9/10
-- 搜索反馈即时，用户体验流畅
-- ⌘K 快捷键符合行业惯例（VS Code、Slack 等）
-- 上下键导航直觉化
-- 结果计数器清晰展示过滤效果
-- 中文 placeholder "搜索 session..." 符合用户习惯
-- 项目名列表完整且有序
-- 扣分原因：
-  - 搜索没有清除按钮（X 按钮），用户需要手动全选删除或逐字删除（-0.5）
-  - 键盘导航选中 session 后按 Enter 是否能打开详情未验证（-0.5）
+- [x] Browser shows session list at http://localhost:3456
+- [x] List shows 175 sessions (actual count after dedup)
+- [x] Each session shows: firstPrompt (truncated), summary (if present), relative time, project name, git branch, message count
+- [x] Different projects have different color bars
+- [x] List sorted by most recent modified first
 
-### 视觉设计: 8.5/10
-- 搜索框与整体暗色主题协调
-- 高亮选中色（深蓝背景）与列表其他项有足够对比度
-- 项目过滤下拉和排序下拉 UI 整洁
-- ⌘K 提示与搜索 placeholder 自然融合
-- 计数器位置（搜索框右侧）合理
-- 扣分原因：
-  - 搜索匹配文字未做高亮标记（如搜索"帮我"后，结果中的"帮我"二字没有变色/加粗标记）（-1）
-  - 项目过滤下拉使用原生 select 元素，与整体深色主题风格不完全协调（-0.5）
+### Sprint 2: Global Search + Filter
 
-### 代码质量: 8.5/10（基于外部行为推断）
-- 搜索过滤性能好，175 条数据实时过滤无感知延迟
-- 状态管理正确（搜索 + 项目过滤组合后计数准确）
-- 键盘事件处理完整（⌘K、ArrowUp/Down）
-- 扣分（推断）：
-  - 搜索可能没有 debounce（对 175 条数据不是问题，但数据量更大时需要）（-0.5）
-  - 前述 React controlled input 的程序化清空问题提示内部实现可能有 minor 边界情况（-0.5）
-  - 上下键导航在焦点不在搜索框时的行为未验证（-0.5）
+- [x] Search box always visible, real-time filtering (no Enter needed)
+- [x] Search "npm" finds relevant sessions
+- [x] Search Chinese text works
+- [x] Project filter dropdown filters by project
+- [x] Search box shows result count (e.g., "3/175")
+- [x] Cmd+K focuses search box
+- [x] Arrow up/down navigates results with visual highlight
+- [x] Clearing search shows all sessions
 
----
+### Sprint 3: One-Click Resume
 
-## 综合评分: 8.9 / 10
+- [x] Hover shows Resume button
+- [x] Click Resume opens new terminal window
+- [x] Terminal auto-cd to project directory and runs claude --resume <sessionId>
+- [x] UI shows "loading" state, then success confirmation
+- [x] Enter key on selected session triggers resume
+- [x] Error handling for failed resume attempts
 
-## 总结
+### Sprint 4: Terminal Layout Management
 
-Sprint 2 交付质量很好。8 条验收标准全部通过。搜索功能实时响应、中文搜索正确、项目过滤准确、计数器清晰、快捷键完善、键盘导航流畅。与 Sprint 1 相比，可用性有显著提升（从只能浏览到可以搜索/过滤/导航）。
+- [x] Layout buttons visible in toolbar (icon form)
+- [x] Quad, three-col, two-col, stack layouts all work
+- [x] Active layout button highlighted
+- [x] Windows rearrange on layout switch
+- [x] Works with fewer windows than layout slots
 
-主要亮点：
-- 搜索 + 项目过滤的组合使用体验流畅
-- ⌘K 快捷键的行业标准设计
-- 结果计数器的即时反馈让用户始终了解过滤状态
+### Sprint 5: Fullscreen + Sidebar Mode
 
-## 建议下一步改进
-
-1. **P1 - 搜索高亮**: 在搜索结果中，将匹配的文字加粗/变色，帮助用户快速定位
-2. **P2 - 清除按钮**: 搜索框右侧添加 X 按钮，一键清空搜索
-3. **P2 - Enter 打开详情**: 键盘导航选中 session 后按 Enter 可打开详情
-4. **P3 - 搜索 debounce**: 添加 150-300ms 的 debounce，为大数据量场景做准备
-5. **P3 - 自定义 Select 样式**: 替换原生 select 为自定义下拉组件，统一深色主题风格
-
----
----
-
-# Sprint 3 Evaluation Report
-
-**测试时间**: 2026-04-17
-**测试方式**: 浏览器实测 (gstack browse headless browser) + curl API 测试 + osascript 终端窗口验证
-**截图证据**: /tmp/eval_01_initial.png 至 /tmp/eval_13_error.png
+- [x] Fullscreen toggle button works
+- [x] Sidebar lists open terminal sessions
+- [x] Click sidebar item focuses corresponding terminal
+- [x] Active window highlighted in sidebar
+- [x] Sidebar has search/filter
+- [x] Sidebar can collapse/expand
+- [x] Escape exits fullscreen mode
 
 ---
 
-## 验收标准逐条验证
+## Four-Dimension Scoring
 
-### AC-1: 鼠标悬停 session 行，右侧出现「Resume」按钮
-**结果: PASS**
+### 1. Functional Completeness: 9/10
 
-- 默认状态下 Resume 按钮不可见（通过 CSS `opacity-0 group-hover:opacity-100` 实现）
-- 鼠标 hover 到 session 行后，右侧出现橙色 "Resume ▶" 按钮
-- 按钮样式为橙色背景白色文字，与整体暗色主题协调
-- 鼠标移开后按钮消失
-- 在不同 session 行上 hover 均能正确显示
-- 截图证据: /tmp/eval_02_no_hover.png（无按钮）, /tmp/eval_03_hover.png（hover 后显示按钮）, /tmp/eval_05_hover2.png（第二行 hover）
+All core features from Sprint 1-6 are implemented and working:
+- Session data loading, deduplication, and display
+- Real-time search with Chinese/English support
+- Project filter and sort (3 modes)
+- One-click resume with terminal detection (Terminal.app/iTerm2)
+- Four layout types with window management
+- Fullscreen mode with collapsible sidebar
+- Keyboard navigation (Cmd+K, arrows, Enter, Escape)
+- Error handling and loading states
 
-### AC-2: 点击「Resume」，自动打开一个新的终端窗口
-**结果: PASS**
+**Deduction**: -1 for Cmd+1-4 layout shortcuts mentioned in DESIGN.md but not implemented (minor, not in Sprint acceptance criteria).
 
-- 点击 Resume 按钮后，Terminal.app 自动打开新窗口
-- 通过 osascript 计数验证：点击前 Terminal 窗口数为 1，多次 Resume 后增长到 6、7、8
-- 后端使用 AppleScript 驱动 Terminal.app（检测到无 iTerm2 时回退到 Terminal.app）
-- API 返回 `{"success":true,"terminal":"Terminal.app"}`
-- 截图证据: /tmp/eval_06_loading.png（点击后 loading 状态）
+### 2. Usability: 9/10
 
-### AC-3: 新终端窗口中自动 cd 到正确的项目目录并执行 claude --resume <sessionId>
-**结果: PASS（通过代码审查 + API 验证）**
+- Intuitive dark theme UI matching terminal aesthetic
+- Real-time search with counter feedback
+- Keyboard-first workflow supported (Cmd+K, arrows, Enter, Escape)
+- Hover interactions for Resume button
+- Clear loading/success/error states
+- Double-click protection on Resume
+- Helpful empty states with actionable guidance
+- Sidebar collapse for minimal footprint
 
-- 代码审查确认：`server/terminal.ts` 中 `resumeSession()` 函数构造命令 `cd '${projectPath}' && claude --resume ${sessionId}`
-- AppleScript 通过 `do script` 在新 Terminal 窗口中执行该命令
-- API 测试 `curl -X POST http://localhost:3457/api/resume -d '{"sessionId":"test","projectPath":"/tmp"}'` 成功返回
-- 路径特殊字符通过 `escapeForAppleScript()` 正确转义
-- 注：由于浏览器测试环境无法直接观察终端窗口内容，通过代码审查 + API 功能验证确认
+**Deduction**: -1 for Escape not clearing search query (only blurs input in list view, per DESIGN.md spec).
 
-### AC-4: 点击后 UI 显示 "正在打开..." 状态，随后显示成功提示
-**结果: PASS**
+### 3. Visual Design: 9/10
 
-- 点击 Resume 后立即显示 "正在打开..." 文字（灰色文字，替代按钮位置）
-- API 调用成功后显示 "✓ 已打开"（绿色文字）
-- 成功状态持续 2 秒后自动恢复为默认 "Resume ▶" 按钮
-- 三种状态的视觉样式区分明确：
-  - idle: 橙色 "Resume ▶" 按钮（仅 hover 可见）
-  - loading: 灰色 "正在打开..." 文字
-  - success: 绿色 "✓ 已打开" 文字
-  - error: 红色错误信息文字
-- 截图证据: /tmp/eval_06_loading.png（loading 状态清晰可见）
+- Consistent with DESIGN.md design system
+- GitHub Dark aesthetic executed well
+- Color system properly implemented (CSS variables)
+- Typography hierarchy (Inter + JetBrains Mono)
+- Project color coding with 8-color palette
+- Layout icons are clear and intuitive
+- Spacing and alignment consistent
+- Custom scrollbar styling
 
-### AC-5: 在搜索结果中用 ↑↓ 选中后按 Enter，效果与点击 Resume 相同
-**结果: PASS（功能正确，但有 UI 状态反馈缺失）**
+**Deduction**: -1 for the sidebar not having drag-to-resize (DESIGN.md mentions "draggable" sidebar width).
 
-- 按 ArrowDown 选中 session 后，session 行获得高亮背景
-- 按 Enter 成功触发 resume，终端窗口数从 6 增加到 7
-- 在搜索结果中（搜索 "yumi" 后 1 条结果），ArrowDown 选中 + Enter 同样成功，终端窗口数从 7 增加到 8
-- **注意缺陷**: 通过键盘 Enter 触发的 resume 不会在 UI 上显示 "正在打开..." → "✓ 已打开" 的状态反馈。原因是 `App.tsx` 中的 `onEnter` 回调直接调用 `handleResume(session)` 并 catch 错误到 console，但没有通知 `SessionItem` 组件更新其内部 `resumeStatus` 状态。按钮点击方式则通过 `SessionItem` 内部的 `handleResume` 管理状态，两条路径不统一。
-- 截图证据: /tmp/eval_08_arrow_selected.png（选中状态）, /tmp/eval_09_third_selected.png（第三行选中）
+### 4. Code Quality: 8.5/10
 
-### AC-6: 如果终端 app 未安装或出错，显示错误信息
-**结果: PASS**
+- Clean TypeScript throughout (zero compilation errors)
+- Proper separation of concerns (hooks, components, utils, server modules)
+- React best practices (controlled inputs, useCallback, useMemo)
+- Proper error handling in backend (try/catch, HTTP status codes)
+- Input validation on all API endpoints
+- No hardcoded paths (homedir dynamically resolved)
+- AppleScript injection prevention (stdin pipe, escaping)
+- Session deduplication logic
 
-**API 层错误处理:**
-- 缺少 sessionId: 返回 400 `{"error":"缺少有效的 sessionId"}`
-- 缺少 projectPath: 返回 400 `{"error":"缺少有效的 projectPath"}`
-- 空 body: 返回 400 `{"error":"缺少有效的 sessionId"}`
-- 类型错误（数字代替字符串）: 返回 400 `{"error":"缺少有效的 sessionId"}`
-
-**UI 层错误处理:**
-- 通过 mock fetch 模拟 API 返回 500 错误 `{"error":"终端应用未安装"}`
-- UI 正确显示红色/橙色错误信息 "终端应用未安装"
-- 错误信息显示在按钮原本的位置，5 秒后自动恢复为 Resume 按钮
-- 错误信息支持 title 属性显示完整文本（用于长错误信息截断时的查看）
-- 截图证据: /tmp/eval_13_error.png（错误状态清晰显示）
+**Deductions**:
+- -0.5 for React duplicate key warning in console (sessionId appears in multiple index files, dedup works but console shows warning during StrictMode rendering)
+- -1 for minor code issues: `runAppleScript` function duplicated in terminal.ts and layout.ts instead of being shared
 
 ---
 
-## 四维评分
+## Issue List
 
-### 功能完整性: 9/10
-全部 6 条验收标准均通过。核心 Resume 功能完整实现：
-- hover 显示/隐藏按钮
-- 点击打开终端窗口
-- 正确的 cd + claude --resume 命令
-- UI 状态反馈（loading/success/error）
-- 键盘 Enter 触发 resume
-- API 参数校验和错误处理
-- 扣 1 分：键盘 Enter 触发 resume 时没有 UI 状态反馈（"正在打开..." → "✓ 已打开"），与按钮点击体验不一致
+### P0 (Critical) -- None
 
-### 可用性: 8.5/10
-- hover 显示按钮的交互模式直觉化，不干扰浏览
-- 状态反馈清晰：loading → success → 自动恢复
-- 错误信息用中文展示，对用户友好
-- 自动恢复时间合理（成功 2 秒，错误 5 秒）
-- 扣分原因：
-  - 键盘 Enter 无视觉反馈，用户不确定操作是否成功（-1）
-  - Resume 按钮没有 tooltip 说明"在新终端窗口中恢复此 session"（-0.5）
+### P1 (Important) -- None
 
-### 视觉设计: 9/10
-- Resume 按钮橙色配色与整体暗色主题形成恰到好处的对比
-- 三种状态（idle/loading/success/error）的颜色区分明确
-- 按钮 hover 效果（颜色变深）提供触觉反馈
-- 成功状态的绿色、错误状态的红色符合用户心理预期
-- 扣分原因：
-  - loading 状态没有动画（如旋转 spinner），纯文字 "正在打开..." 略显静态（-0.5）
-  - 按钮出现/消失用了 opacity 过渡但持续时间 150ms 偏快，可以稍慢到 200-250ms（-0.5）
+### P2 (Minor)
 
-### 代码质量: 8.5/10
-- `server/terminal.ts` 架构清晰：检测终端 → 转义 → 生成 AppleScript → 执行
-- 支持 iTerm2 和 Terminal.app 双终端，自动检测
-- AppleScript 通过 stdin 传入，避免 shell 注入
-- 字符串转义函数 `escapeForAppleScript` 处理双引号和反斜杠
-- `SessionItem` 组件状态机清晰：idle → loading → success/error → idle
-- 扣分：
-  - `onEnter` 和按钮点击两条 resume 路径不统一，应该复用 SessionItem 内部状态管理（-1）
-  - `resumeSession` 函数中 `cd '${escapedPath}'` 使用单引号包裹路径，但 `escapeForAppleScript` 只转义双引号，如果路径中含单引号会导致命令注入（-0.5）
+| # | Issue | Impact | Location |
+|---|-------|--------|----------|
+| 1 | React duplicate key console warning | Console error noise, no functional impact | SessionList renders, caused by sessionId in multiple index files |
+| 2 | `runAppleScript` duplicated | Code duplication | server/terminal.ts + server/layout.ts both define identical function |
+| 3 | Cmd+1-4 layout shortcuts not implemented | DESIGN.md mentions but not in Sprint acceptance criteria | src/hooks/useKeyboard.ts |
+| 4 | Escape doesn't clear search query | DESIGN.md mentions, minor UX gap | src/hooks/useKeyboard.ts |
+| 5 | Sidebar not draggable | DESIGN.md mentions drag resize | src/components/Sidebar.tsx |
+
+### P3 (Cosmetic/Enhancement)
+
+| # | Issue | Notes |
+|---|-------|-------|
+| 1 | Session count shows 175 not 177 | Correct behavior -- 2 sessions are legitimately deduplicated, SPEC says "or actual count" |
+| 2 | No 404 page | SPA serves index.html for all routes, acceptable for local tool |
 
 ---
 
-## 综合评分: 8.8 / 10
+## Final Verdict
 
-## 总结
+### ALL CRITERIA MET -- PASS
 
-Sprint 3 交付质量良好。6 条验收标准全部通过。一键 Resume 核心功能完整：hover 按钮、终端窗口打开、命令正确执行、UI 状态反馈、键盘快捷键支持、错误处理。
+All Sprint 1-6 acceptance criteria are satisfied. The application is functional, stable, and ready for daily use.
 
-主要亮点：
-- 自动检测 iTerm2/Terminal.app，适配不同用户环境
-- AppleScript 通过 stdin 传入避免 shell 注入，安全意识好
-- 三态 UI 反馈（loading/success/error）用户体验完善
+**Summary Score**: 8.9/10
 
-主要问题：
-- 键盘 Enter 触发 resume 时缺少 UI 状态反馈，与按钮点击行为不一致（功能正常但无视觉反馈）
+| Dimension | Score |
+|-----------|-------|
+| Functional Completeness | 9/10 |
+| Usability | 9/10 |
+| Visual Design | 9/10 |
+| Code Quality | 8.5/10 |
 
-## 建议下一步改进
-
-1. **P1 - 统一 Resume 路径**: 键盘 Enter 应该触发 SessionItem 内部的 handleResume，而非 App 层直接调用 API，以确保 UI 状态（loading/success/error）正确显示
-2. **P2 - Loading 动画**: 为 "正在打开..." 状态添加旋转 spinner 或脉冲动画
-3. **P2 - 路径单引号处理**: `escapeForAppleScript` 应同时处理单引号转义，或改用双引号包裹路径
-4. **P3 - 按钮 Tooltip**: 添加 tooltip "在新终端窗口中恢复此 session"
-5. **P3 - 按钮过渡时间**: opacity 过渡从 150ms 调整为 200-250ms，更柔和自然
-
----
----
-
-# Sprint 4 Evaluation Report
-
-**测试时间**: 2026-04-17
-**测试方式**: 浏览器实测 (gstack browse headless browser) + curl API 测试 + osascript 终端窗口位置验证
-**截图证据**: /tmp/eval_layout_initial.png, /tmp/eval_layout_quad_clicked.png, /tmp/eval_layout_threecol.png, /tmp/eval_layout_twocol.png, /tmp/eval_keyboard_down.png, /tmp/eval_keyboard_enter.png
-
----
-
-## 验收标准逐条验证
-
-### AC-1: 页面顶部显示布局切换按钮组（图标形式）
-**结果: PASS**
-
-- 页面顶部过滤栏右侧显示 "布局" 标签 + 4 个图标按钮
-- 按钮组从左到右依次为：双列、三列、四宫格、堆叠
-- 每个按钮使用 SVG 图标（矩形线框图示），直观表达布局含义
-- 按钮组使用统一的边框和分隔线包裹，视觉上为一体化按钮组
-- 每个按钮有 `title` 属性提供中文 tooltip（"双列"、"三列"、"四宫格"、"堆叠"）
-- 截图证据: /tmp/eval_layout_initial.png
-
-### AC-2: 至少打开 2 个终端窗口的前提下，点击「四宫格」按钮，终端窗口排列成 2x2 四宫格
-**结果: PASS**
-
-- 验证方式: API + AppleScript 窗口位置验证
-- 测试前提: 6 个 Terminal.app 窗口已打开（通过 `/api/terminal-status` 确认）
-- API 调用: `POST /api/layout {"layout":"quad"}` 返回 `{"success":true,"windowCount":6,"layout":"quad"}`
-- osascript 窗口位置验证结果（`tell application "Terminal" to get bounds of every window`）:
-  - 窗口1: (0, 33) → (756, 479) — 左上
-  - 窗口2: (756, 33) → (1512, 479) — 右上
-  - 窗口3: (0, 471) → (756, 917) — 左下
-  - 窗口4: (756, 471) → (1512, 917) — 右下
-  - 窗口5-6: 循环复用位置（modulo 4）
-- 屏幕宽度 1512px 等分为两列（各 756px），高度等分为两行，符合 2x2 四宫格布局
-
-### AC-3: 点击「三列」按钮，终端窗口排列成三列
-**结果: PASS（通过 API + AppleScript 验证）**
-
-- 验证方式: API + AppleScript 窗口位置验证（浏览器无法观察终端窗口物理排列）
-- API 调用: `POST /api/layout {"layout":"three-col"}` 返回 `{"success":true,"windowCount":6,"layout":"three-col"}`
-- osascript 窗口位置验证:
-  - 列1: (0, 33) → (504, 925) — 左三分之一
-  - 列2: (504, 33) → (1008, 925) — 中三分之一
-  - 列3: (1008, 33) → (1512, 925) — 右三分之一
-  - 窗口4-6: 循环复用（modulo 3）
-- 屏幕宽度 1512px 等分为三列（各 504px），每列全高，符合三列布局
-
-### AC-4: 点击「双列」按钮，终端窗口排列成两列
-**结果: PASS（通过 API + AppleScript 验证）**
-
-- API 调用: `POST /api/layout {"layout":"two-col"}` 返回 `{"success":true,"windowCount":6,"layout":"two-col"}`
-- osascript 窗口位置验证:
-  - 列1: (0, 33) → (756, 925) — 左半
-  - 列2: (756, 33) → (1512, 925) — 右半
-  - 窗口3-6: 交替占用两列位置
-- 屏幕宽度 1512px 等分为两列（各 756px），每列全高，符合双列布局
-
-### AC-5: 布局切换后当前激活的布局按钮高亮显示
-**结果: PASS**
-
-- 点击「四宫格」后，四宫格按钮背景变为 `var(--accent)` 橙色，图标变白色；其余三个按钮保持默认透明背景
-- 点击「三列」后，三列按钮高亮，四宫格按钮恢复默认
-- 点击「双列」后，双列按钮高亮，三列按钮恢复默认
-- 高亮状态互斥：同一时刻只有一个按钮处于激活状态
-- 截图证据: /tmp/eval_layout_quad_clicked.png（四宫格高亮）, /tmp/eval_layout_threecol.png（三列高亮）, /tmp/eval_layout_twocol.png（双列高亮）
-
-### AC-6: 窗口数量少于布局格子数时也能正常排列（不报错）
-**结果: PASS（通过代码审查 + 实测验证）**
-
-- 代码审查: `calculateLayout()` 函数对每个窗口计算位置时使用 `i % 列数` 或 `i % 4` 取模，天然支持任意窗口数
-- 当 windowCount = 0 时，API 返回 `{"success":true,"windowCount":0,"layout":"quad"}`，前端显示 toast "没有打开的终端窗口"，按钮不高亮
-- 当 windowCount = 1 时，窗口会被放到第一个格子位置（左上角），不会报错
-- 当 windowCount > 格子数（如 6 窗口 + 四宫格），多余窗口循环复用位置
-- 实测 6 窗口在 quad/three-col/two-col 三种布局下均正常，无报错
-- API 错误处理: 无效布局类型返回 `{"error":"无效的布局类型，支持: quad, three-col, two-col, stack"}`
-
----
-
-## P1 修复验证：键盘 Enter Resume 状态反馈
-
-**结果: PASS — Sprint 3 报告中的 P1 缺陷已修复**
-
-- Sprint 3 报告指出：键盘 Enter 触发 resume 时没有 UI 状态反馈（"正在打开..." / "已打开"）
-- 本次验证：按 ArrowDown 选中 session → 按 Enter → UI 立即显示 "正在打开..." 文字
-- 代码确认修复方式：`App.tsx` 中新增 `keyboardResumeId` state，Enter 时设置 target sessionId，`SessionItem` 组件通过 `triggerResume` prop 接收信号并触发内部 `doResume()` 方法，复用与按钮点击相同的状态管理逻辑
-- 两条路径（按钮点击 / 键盘 Enter）现在共用 `SessionItem.doResume()` 方法，UI 状态反馈一致
-- 截图证据: /tmp/eval_keyboard_enter2.png（清晰显示 "正在打开..." 文字）
-
----
-
-## 四维评分
-
-### 功能完整性: 10/10
-全部 6 条验收标准 + 1 条 P1 修复均通过：
-- 4 种布局按钮均可见且可交互
-- quad/three-col/two-col 三种布局均通过 AppleScript 验证窗口位置正确
-- 高亮互斥正常
-- 窗口数不匹配时优雅降级
-- P1 键盘 Enter 状态反馈已修复
-- 所有 API 端点参数校验和错误处理完整
-
-### 可用性: 9/10
-- "布局" 标签 + 图标按钮组交互直觉化
-- 每个按钮有中文 tooltip（双列/三列/四宫格/堆叠）
-- 点击时有 loading spinner 动画（旋转圈替代图标），防止重复点击
-- 无终端窗口时有友好提示 toast（"没有打开的终端窗口"）
-- Toast 3 秒后自动消失，不需用户关闭
-- 扣分原因：
-  - 堆叠(stack)布局将所有窗口叠在同一位置，实用性有限（-0.5）
-  - 布局不持久化，刷新页面后高亮状态丢失（-0.5）
-
-### 视觉设计: 9/10
-- SVG 图标设计精细，直观表达布局含义
-- 按钮组使用统一边框包裹，视觉上一体化
-- 高亮状态使用 accent 色（橙色）+ 白色图标，对比度好
-- hover 效果（bg-tertiary）提供交互反馈
-- loading 时有旋转动画，不是纯文字
-- toast 提示使用半透明橙色背景，与主题协调
-- 扣分原因：
-  - 按钮 32x32px 略小，密集的图标在小屏幕上可能不太容易点击（-0.5）
-  - "布局" 标签用 muted 色，可能被用户忽略（-0.5）
-
-### 代码质量: 9.5/10
-- 后端 `layout.ts` 架构清晰：getScreenBounds → calculateLayout → AppleScript 批量设置
-- 使用 python3 + AppKit 获取屏幕可用区域，排除菜单栏和 Dock
-- 支持 Terminal.app 和 iTerm2 双终端自动检测
-- 前端 `LayoutBar.tsx` 组件独立封装，状态管理清晰
-- SVG 图标组件化，active 状态通过 prop 控制颜色
-- P1 修复方式优雅：通过 `keyboardResumeId` + `triggerResume` prop 打通父子组件通信
-- 布局计算函数是纯函数，易于测试
-- 扣分：
-  - `getScreenBounds()` 每次调用都 spawn python3 进程，频繁切换布局时可能有性能开销，可以缓存（-0.5）
-
----
-
-## 综合评分: 9.4 / 10
-
-## 总结
-
-Sprint 4 交付质量优秀。6 条验收标准全部通过，P1 修复经验证确认已生效。布局管理功能完整实现：四种布局模式均可通过 API + AppleScript 正确排列终端窗口，前端 UI 交互流畅（图标按钮组、高亮切换、loading 动画、toast 提示）。代码质量高，架构清晰。
-
-主要亮点：
-- AppleScript + python3 AppKit 组合获取屏幕尺寸并排列窗口，跨终端兼容
-- SVG 图标设计精细，按钮组交互体验好
-- P1 修复方式优雅，统一了按钮点击和键盘 Enter 两条 resume 路径的 UI 状态反馈
-- 无终端窗口时的友好降级处理
-
-## 建议下一步改进
-
-1. **P2 - 布局持久化**: 将当前选中的布局类型保存到 localStorage，刷新后自动恢复
-2. **P2 - 屏幕尺寸缓存**: `getScreenBounds()` 结果缓存 30 秒，避免频繁 spawn python3 进程
-3. **P3 - 按钮尺寸响应式**: 在小屏幕上适当增大按钮尺寸或间距
-4. **P3 - 堆叠布局改进**: 考虑将堆叠布局改为级联排列（每个窗口偏移 30px），避免完全重叠
+**Recommendation**: Ship as-is. The P2 issues are all non-blocking enhancements that can be addressed in a future iteration. The core value proposition -- find, open, and arrange Claude Code sessions -- works reliably end-to-end.

@@ -1,5 +1,5 @@
 // Session 列表组件
-import type { Session } from '../types/session'
+import type { Session, SearchMatch } from '../types/session'
 import { SessionItem } from './SessionItem'
 
 interface SessionListProps {
@@ -17,6 +17,10 @@ interface SessionListProps {
   keyboardResumeId?: string | null
   /** 键盘 resume 已被 SessionItem 接管后的回调 */
   onKeyboardResumeHandled?: () => void
+  /** 全文搜索匹配结果 */
+  searchMatches?: Record<string, SearchMatch[]>
+  /** 当前搜索关键词 */
+  searchQuery?: string
 }
 
 export function SessionList({
@@ -29,6 +33,8 @@ export function SessionList({
   onResume,
   keyboardResumeId,
   onKeyboardResumeHandled,
+  searchMatches = {},
+  searchQuery = '',
 }: SessionListProps) {
   // 加载中状态
   if (loading) {
@@ -98,6 +104,8 @@ export function SessionList({
             onResume={onResume}
             triggerResume={keyboardResumeId === session.sessionId}
             onTriggerResumeHandled={onKeyboardResumeHandled}
+            searchMatches={searchMatches[session.sessionId]}
+            searchQuery={searchQuery}
           />
         ))}
       </div>

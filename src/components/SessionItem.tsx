@@ -1,8 +1,8 @@
 // 单个 Session 行组件
-import type { Session } from '../types/session'
+import type { Session, SearchMatch } from '../types/session'
 import { formatRelativeTime } from '../utils/time'
 import { getProjectColor } from '../utils/color'
-import { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 
 /** Resume 操作的状态 */
 type ResumeStatus = 'idle' | 'loading' | 'success' | 'error'
@@ -19,6 +19,10 @@ interface SessionItemProps {
   triggerResume?: boolean
   /** 通知父组件已接管 triggerResume */
   onTriggerResumeHandled?: () => void
+  /** 全文搜索匹配的文本片段 */
+  searchMatches?: SearchMatch[]
+  /** 当前搜索关键词（用于高亮） */
+  searchQuery?: string
 }
 
 /**
@@ -43,7 +47,28 @@ function shortenPath(fullPath: string, homedir: string): string {
   return fullPath
 }
 
-export function SessionItem({ session, isSelected = false, homedir = '', onResume, triggerResume = false, onTriggerResumeHandled }: SessionItemProps) {
+/**
+ * 高亮文本中的关键词
+ */
+function highlightText(text: string, query: string): React.ReactElement {
+  if (!query.trim()) return <>{text}</>
+  const lowerText = text.toLowerCase()
+  const lowerQuery = query.toLowerCase()
+  const idx = lowerText.indexOf(lowerQuery)
+  if (idx === -1) return <>{text}</>
+
+  return (
+    <>
+      {text.slice(0, idx)}
+      <mark style={{ backgroundColor: 'rgba(218, 119, 86, 0.35)', color: 'var(--accent-hover)', borderRadius: '2px', padding: '0 1px' }}>
+        {text.slice(idx, idx + query.length)}
+      </mark>
+      {text.slice(idx + query.length)}
+    </>
+  )
+}
+
+export function SessionItem({ session, isSelected = false, homedir = '', onResume, triggerResume = false, onTriggerResumeHandled, searchMatches, searchQuery }: SessionItemProps) {
   const projectColor = getProjectColor(session.projectName)
   const relativeTime = formatRelativeTime(session.modified)
   const itemRef = useRef<HTMLDivElement>(null)
@@ -226,8 +251,32 @@ export function SessionItem({ session, isSelected = false, homedir = '', onResum
             style={{ color: 'var(--text-secondary)' }}
             title={session.summary}
           >
-            {truncateText(session.summary, 120)}
+            {searchQuery
+              ? highlightText(truncateText(session.summary, 120), searchQuery)
+              : truncateText(session.summary, 120)
+            }
           </p>
+        )}
+
+        {/* 全文搜索匹配片段 */}
+        {searchMatches && searchMatches.length > 0 && (
+          <div className="mt-1.5 space-y-1">
+            {searchMatches.map((match, i) => (
+              <div
+                key={i}
+                className="flex items-start gap-1.5 text-xs"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                <span style={{ color: 'var(--accent)', fontSize: '10px', marginTop: '2px', flexShrink: 0 }}>💬</span>
+                <span className="truncate" title={match.text}>
+                  {searchQuery
+                    ? highlightText(match.highlight, searchQuery)
+                    : match.highlight
+                  }
+                </span>
+              </div>
+            ))}
+          </div>
         )}
 
         {/* 第三行：元信息 */}
