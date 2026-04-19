@@ -96,8 +96,8 @@ export function SessionItem({
   return (
     <div
       ref={ref}
-      onClick={() => { if (!renaming) doResume() }}
-      className={`session-card group ml-5 mr-4 mb-1.5 cursor-pointer ${isSelected ? 'selected' : ''} ${isActive ? 'is-active' : isOpen ? 'is-open' : ''}`}
+      onClick={() => { if (renaming) return; if (isOpen) doResume() }}
+      className={`session-card group ml-5 mr-4 mb-1.5 ${isOpen ? 'cursor-pointer' : ''} ${isSelected ? 'selected' : ''} ${isActive ? 'is-active' : isOpen ? 'is-open' : ''}`}
     >
       <div className="flex flex-col">
         {/* 自定义名称横条（顶部独立区块） */}
