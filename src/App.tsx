@@ -311,19 +311,18 @@ export default function App() {
       <div className="flex-1 flex flex-col min-w-0 h-full">
         {/* 终端区域顶部：布局控制 */}
         <div
-          className="shrink-0 flex items-center justify-between px-4"
+          className="shrink-0 flex items-center px-4"
           style={{
             height: '38px',
             borderBottom: '1px solid var(--border)',
-            WebkitAppRegion: 'drag',
-          } as React.CSSProperties}
+            // 收起侧边栏时给 macOS 红绿灯让出空间
+            paddingLeft: leftPanelCollapsed ? '80px' : '16px',
+          }}
         >
-          <div style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
-            <LayoutBar
-              activeLayout={layout}
-              onLayoutChange={handleLayoutChange}
-            />
-          </div>
+          <LayoutBar
+            activeLayout={layout}
+            onLayoutChange={handleLayoutChange}
+          />
         </div>
 
         {/* 终端面板 + 侧边栏 */}

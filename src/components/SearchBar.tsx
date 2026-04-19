@@ -12,21 +12,13 @@ interface SearchBarProps {
 export function SearchBar({ query, onQueryChange, filteredCount, totalCount, inputRef }: SearchBarProps) {
   return (
     <div className="search-box relative flex items-center w-full">
-      {/* 搜索图标 */}
-      <div className="absolute left-3.5 pointer-events-none" style={{ color: query ? 'var(--accent)' : 'var(--text-muted)' }}>
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-          <circle cx="11" cy="11" r="8" />
-          <line x1="21" y1="21" x2="16.65" y2="16.65" />
-        </svg>
-      </div>
-
       <input
         ref={inputRef}
         type="text"
         value={query}
         onChange={(e) => onQueryChange(e.target.value)}
         placeholder="搜索 session..."
-        className="w-full h-10 pl-10 pr-28 text-[13px] bg-transparent outline-none"
+        className="w-full h-10 pl-3.5 pr-28 text-[13px] bg-transparent outline-none"
         style={{
           color: 'var(--text-primary)',
           fontWeight: 400,
