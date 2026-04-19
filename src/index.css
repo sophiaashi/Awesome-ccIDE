@@ -1,35 +1,39 @@
 @import "tailwindcss";
 
-/* 设计系统 CSS 变量 */
+/* 设计系统 CSS 变量 — Terminal-native dark theme */
 :root {
-  --bg-primary: #0D1117;
-  --bg-secondary: #161B22;
-  --bg-tertiary: #21262D;
-  --bg-active: rgba(31, 111, 235, 0.133);
-  --border: #30363D;
-  --border-active: #1F6FEB;
+  --bg-primary: #0a0e14;
+  --bg-secondary: #131920;
+  --bg-tertiary: #1a2029;
+  --bg-card: #141a22;
+  --bg-card-hover: #1a222d;
+  --bg-active: rgba(218, 119, 86, 0.08);
+  --border: #1e2630;
+  --border-subtle: #1a2029;
+  --border-active: #DA7756;
 
-  --text-primary: #E6EDF3;
-  --text-secondary: #8B949E;
-  --text-muted: #484F58;
+  --text-primary: #e2e8f0;
+  --text-secondary: #7a8594;
+  --text-muted: #3d4754;
   --text-link: #58A6FF;
 
   --accent: #DA7756;
-  --accent-hover: #E8956E;
+  --accent-hover: #e8956e;
+  --accent-dim: rgba(218, 119, 86, 0.12);
   --success: #3FB950;
+  --success-dim: rgba(63, 185, 80, 0.12);
   --warning: #D29922;
   --info: #58A6FF;
+  --info-dim: rgba(88, 166, 255, 0.1);
 
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
 
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-6: 24px;
-  --space-8: 32px;
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.3), 0 0 0 1px var(--border);
+  --shadow-card-hover: 0 4px 12px rgba(0,0,0,0.4), 0 0 0 1px var(--border);
+  --shadow-search: 0 2px 8px rgba(0,0,0,0.3), inset 0 0 0 1px var(--border);
+  --shadow-search-focus: 0 2px 12px rgba(218, 119, 86, 0.15), inset 0 0 0 1px var(--accent);
 }
 
 /* 全局样式 */
@@ -40,7 +44,7 @@
 }
 
 body {
-  font-family: 'Inter', -apple-system, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: 14px;
   color: var(--text-primary);
   background-color: var(--bg-primary);
@@ -48,20 +52,102 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* 滚动条样式 */
+/* 滚动条 */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
-
 ::-webkit-scrollbar-track {
-  background: var(--bg-primary);
+  background: transparent;
 }
-
 ::-webkit-scrollbar-thumb {
   background: var(--border);
-  border-radius: 4px;
+  border-radius: 3px;
 }
-
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
+}
+
+/* 搜索框动画 */
+.search-box {
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  box-shadow: var(--shadow-search);
+}
+.search-box:focus-within {
+  box-shadow: var(--shadow-search-focus);
+}
+
+/* Session 卡片动画 */
+.session-card {
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+}
+.session-card:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border);
+  box-shadow: var(--shadow-card-hover);
+  transform: translateY(-1px);
+}
+.session-card.selected {
+  background: var(--bg-active);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent), 0 2px 8px rgba(218, 119, 86, 0.1);
+}
+
+/* 命名按钮 */
+.name-btn {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.session-card:hover .name-btn {
+  opacity: 1;
+}
+
+/* Resume 按钮 */
+.resume-btn {
+  opacity: 0;
+  transform: translateX(4px);
+  transition: all 0.15s ease;
+}
+.session-card:hover .resume-btn {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* 布局按钮 */
+.layout-btn {
+  transition: all 0.15s ease;
+}
+.layout-btn:hover {
+  background: var(--bg-tertiary);
+}
+.layout-btn.active {
+  background: var(--accent);
+  color: white;
+}
+
+/* 标签样式 */
+.tag {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+/* 过渡动画 */
+.fade-in {
+  animation: fadeIn 0.2s ease;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 加载动画 */
+@keyframes pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+.loading-pulse {
+  animation: pulse 1.5s ease-in-out infinite;
 }

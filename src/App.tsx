@@ -173,33 +173,32 @@ export default function App() {
 
   // 默认列表视图渲染
   return (
-    <div
-      className="min-h-screen"
-      style={{ backgroundColor: 'var(--bg-primary)' }}
-    >
-      {/* 顶部标题栏 + 搜索框 */}
+    <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
+      {/* 顶部标题栏 */}
       <header
-        className="sticky top-0 z-10 border-b"
+        className="sticky top-0 z-10"
         style={{
-          backgroundColor: 'var(--bg-secondary)',
-          borderColor: 'var(--border)',
+          backgroundColor: 'var(--bg-primary)',
+          borderBottom: '1px solid var(--border)',
+          backdropFilter: 'blur(12px)',
         }}
       >
-        <div className="max-w-5xl mx-auto px-6 py-4">
+        <div className="max-w-5xl mx-auto px-6 pt-5 pb-4">
           {/* 标题行 */}
-          <div className="flex items-center justify-between mb-3">
-            <h1
-              className="text-lg font-semibold"
-              style={{ color: 'var(--text-primary)' }}
-            >
-              <span style={{ color: 'var(--accent)' }}>Claude</span> Session Manager
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-xl font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
+              <span style={{ color: 'var(--accent)' }}>Claude</span>
+              <span className="font-normal ml-1.5" style={{ color: 'var(--text-secondary)' }}>Sessions</span>
             </h1>
             {!loading && !error && (
               <span
-                className="text-sm"
-                style={{ color: 'var(--text-secondary)' }}
+                className="text-xs px-2.5 py-1 rounded-full font-medium"
+                style={{
+                  backgroundColor: 'var(--accent-dim)',
+                  color: 'var(--accent)',
+                }}
               >
-                {totalCount} sessions
+                {totalCount}
               </span>
             )}
           </div>
@@ -222,11 +221,8 @@ export default function App() {
         {/* 过滤/排序栏 + 布局控制 */}
         {!loading && !error && (
           <div
-            className="flex items-center justify-between border-b"
-            style={{
-              borderColor: 'var(--border)',
-              backgroundColor: 'var(--bg-secondary)',
-            }}
+            className="flex items-center justify-between px-6 py-2.5"
+            style={{ borderBottom: '1px solid var(--border)' }}
           >
             <FilterBar
               projects={projects}
@@ -243,20 +239,22 @@ export default function App() {
         )}
 
         {/* Session 列表 */}
-        <SessionList
-          sessions={filteredSessions}
-          loading={loading}
-          error={error}
-          totalCount={totalCount}
-          selectedIndex={selectedIndex}
-          homedir={homedir}
-          onResume={handleResume}
-          keyboardResumeId={keyboardResumeId}
-          onKeyboardResumeHandled={() => setKeyboardResumeId(null)}
-          searchMatches={searchMatches}
-          searchQuery={query}
-          onNameChanged={refresh}
-        />
+        <div className="pt-2 pb-6">
+          <SessionList
+            sessions={filteredSessions}
+            loading={loading}
+            error={error}
+            totalCount={totalCount}
+            selectedIndex={selectedIndex}
+            homedir={homedir}
+            onResume={handleResume}
+            keyboardResumeId={keyboardResumeId}
+            onKeyboardResumeHandled={() => setKeyboardResumeId(null)}
+            searchMatches={searchMatches}
+            searchQuery={query}
+            onNameChanged={refresh}
+          />
+        </div>
       </main>
     </div>
   )
