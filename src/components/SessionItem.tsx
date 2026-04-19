@@ -98,42 +98,43 @@ export function SessionItem({
       ref={ref}
       className={`session-card group ml-5 mr-4 mb-1.5 cursor-pointer ${isSelected ? 'selected' : ''} ${isActive ? 'is-active' : isOpen ? 'is-open' : ''}`}
     >
-      <div className="flex items-stretch">
-        {/* 自定义名称竖条区域（左侧独立区块） */}
-        {session.customName && !renaming ? (
+      <div className="flex flex-col">
+        {/* 自定义名称横条（顶部独立区块） */}
+        {session.customName && !renaming && (
           <div
-            className="shrink-0 flex items-center justify-center rounded-l-lg cursor-text"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-t-lg cursor-text"
             style={{
-              width: '32px',
-              backgroundColor: isActive ? 'rgba(218,119,86,0.15)' : 'rgba(255,255,255,0.03)',
-              borderRight: '1px solid var(--border)',
-              writingMode: 'vertical-rl',
-              textOrientation: 'mixed',
+              backgroundColor: isActive ? 'rgba(218,119,86,0.12)' : 'rgba(255,255,255,0.03)',
+              borderBottom: '1px solid var(--border)',
             }}
             onDoubleClick={e => { e.stopPropagation(); setRenaming(true) }}
             title="双击重命名"
           >
-            <span className="text-[10px] font-[590] tracking-wide" style={{
-              color: 'var(--accent)',
-              transform: 'rotate(180deg)',
-              maxHeight: '100px',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}>
-              {session.customName}
+            <span className="text-[12px] font-[590] truncate" style={{ color: 'var(--accent)' }}>
+              {searchQuery ? highlight(session.customName, searchQuery) : session.customName}
             </span>
+            <button
+              className="name-btn shrink-0 w-[16px] h-[16px] flex items-center justify-center rounded-[3px] cursor-pointer"
+              onClick={e => { e.stopPropagation(); setRenaming(true) }}
+            >
+              <svg width="9" height="9" viewBox="0 0 16 16" fill="none" stroke="var(--text-muted)" strokeWidth="1.5" strokeLinecap="round">
+                <path d="M11.5 1.5l3 3-9 9H2.5v-3l9-9z" />
+              </svg>
+            </button>
           </div>
-        ) : (
-          /* 无名称时的窄色条 */
-          <div className="w-[3px] shrink-0 rounded-l-lg" style={{
-            backgroundColor: isActive ? 'var(--accent)' : isOpen ? 'var(--success)' : 'var(--border)',
-            opacity: isActive || isOpen ? 1 : 0.4,
-          }} />
         )}
 
-        {/* 主内容 */}
-        <div className="flex-1 min-w-0 py-2.5" style={{ paddingLeft: '12px', paddingRight: '12px' }}>
+        {/* 主内容行 */}
+        <div className="flex items-stretch">
+          {/* 左侧色条 */}
+          <div className="w-[3px] shrink-0" style={{
+            backgroundColor: isActive ? 'var(--accent)' : isOpen ? 'var(--success)' : 'var(--border)',
+            opacity: isActive || isOpen ? 1 : 0.4,
+            borderRadius: session.customName ? '0' : '8px 0 0 8px',
+          }} />
+
+          {/* 内容 */}
+          <div className="flex-1 min-w-0 py-2.5" style={{ paddingLeft: '12px', paddingRight: '12px' }}>
           {/* 行1：状态 + 时间 + 按钮 */}
           <div className="flex items-center justify-between gap-2 mb-1">
             <div className="flex items-center gap-1.5 min-w-0 flex-1">
@@ -255,6 +256,7 @@ export function SessionItem({
               </>
             )}
           </div>
+        </div>
         </div>
       </div>
     </div>

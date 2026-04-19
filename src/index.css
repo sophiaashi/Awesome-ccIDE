@@ -116,11 +116,9 @@ body {
 }
 .session-card:hover {
   background: var(--bg-card-hover);
-  border-color: var(--border);
 }
 .session-card.selected {
-  background: var(--bg-active);
-  border-color: var(--accent-border);
+  background: rgba(255,255,255,0.03);
 }
 .session-card.is-open {
   background: rgba(39, 166, 68, 0.06);
