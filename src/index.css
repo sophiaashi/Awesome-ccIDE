@@ -122,6 +122,14 @@ body {
   background: var(--bg-active);
   border-color: var(--accent-border);
 }
+.session-card.is-open {
+  background: rgba(39, 166, 68, 0.06);
+  border-left: 3px solid rgba(39, 166, 68, 0.5);
+}
+.session-card.is-active {
+  background: rgba(218, 119, 86, 0.08);
+  border-left: 3px solid var(--accent);
+}
 
 /* Hover-reveal elements */
 .name-btn {

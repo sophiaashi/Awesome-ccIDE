@@ -1,7 +1,6 @@
-// Session 卡片 — Linear 风格：半透明背景、亮度层级、克制动效
+// Session 卡片 — 简洁布局，底色区分状态
 import type { Session, SearchMatch } from '../types/session'
 import { formatRelativeTime } from '../utils/time'
-import { getProjectColor } from '../utils/color'
 import React, { useEffect, useRef, useState } from 'react'
 
 type ResumeStatus = 'idle' | 'loading' | 'success' | 'error'
@@ -49,7 +48,6 @@ export function SessionItem({
   searchMatches, searchQuery, onNameChanged,
   isOpen = false, isActive = false,
 }: SessionItemProps) {
-  const color = getProjectColor(session.projectName)
   const time = formatRelativeTime(session.modified)
   const ref = useRef<HTMLDivElement>(null)
   const nameRef = useRef<HTMLInputElement>(null)
@@ -77,7 +75,7 @@ export function SessionItem({
     } catch {}
   }
 
-  const resume = () => {
+  const doResume = () => {
     if (status === 'loading' || !onResume) return
     setStatus('loading'); setError('')
     try {
@@ -92,41 +90,64 @@ export function SessionItem({
   }
 
   useEffect(() => {
-    if (triggerResume) { onTriggerResumeHandled?.(); resume() }
+    if (triggerResume) { onTriggerResumeHandled?.(); doResume() }
   }, [triggerResume])
 
   return (
     <div
       ref={ref}
-      className={`session-card group ml-5 mr-4 mb-1.5 cursor-pointer ${isSelected ? 'selected' : ''}`}
+      className={`session-card group ml-5 mr-4 mb-1.5 cursor-pointer ${isSelected ? 'selected' : ''} ${isActive ? 'is-active' : isOpen ? 'is-open' : ''}`}
     >
       <div className="flex items-stretch">
-        {/* 项目色条 */}
-        <div className="w-[3px] shrink-0 rounded-l-lg" style={{
-          backgroundColor: isActive ? 'var(--accent)' : isOpen ? 'var(--success)' : color,
-          opacity: isActive ? 1 : isOpen ? 1 : isSelected ? 1 : 0.5,
-        }} />
+        {/* 自定义名称竖条区域（左侧独立区块） */}
+        {session.customName && !renaming ? (
+          <div
+            className="shrink-0 flex items-center justify-center rounded-l-lg cursor-text"
+            style={{
+              width: '32px',
+              backgroundColor: isActive ? 'rgba(218,119,86,0.15)' : 'rgba(255,255,255,0.03)',
+              borderRight: '1px solid var(--border)',
+              writingMode: 'vertical-rl',
+              textOrientation: 'mixed',
+            }}
+            onDoubleClick={e => { e.stopPropagation(); setRenaming(true) }}
+            title="双击重命名"
+          >
+            <span className="text-[10px] font-[590] tracking-wide" style={{
+              color: 'var(--accent)',
+              transform: 'rotate(180deg)',
+              maxHeight: '100px',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}>
+              {session.customName}
+            </span>
+          </div>
+        ) : (
+          /* 无名称时的窄色条 */
+          <div className="w-[3px] shrink-0 rounded-l-lg" style={{
+            backgroundColor: isActive ? 'var(--accent)' : isOpen ? 'var(--success)' : 'var(--border)',
+            opacity: isActive || isOpen ? 1 : 0.4,
+          }} />
+        )}
 
-        <div className="flex-1 min-w-0 py-3" style={{ paddingLeft: '14px', paddingRight: '14px' }}>
-          {/* 已打开/激活状态标签 */}
-          {isOpen && (
-            <div className="flex items-center gap-1.5 mb-1.5">
-              <span className="inline-block w-[6px] h-[6px] rounded-full" style={{
-                backgroundColor: isActive ? 'var(--accent)' : 'var(--success)',
-                boxShadow: isActive ? '0 0 6px var(--accent)' : '0 0 6px var(--success)',
-              }} />
-              <span className="text-[10px] font-[590] uppercase tracking-wide" style={{
-                color: isActive ? 'var(--accent)' : 'var(--success)',
-              }}>
-                {isActive ? '当前' : '运行中'}
-              </span>
-            </div>
-          )}
-
-          {/* 行1：名称 + 时间 + Resume */}
+        {/* 主内容 */}
+        <div className="flex-1 min-w-0 py-2.5" style={{ paddingLeft: '12px', paddingRight: '12px' }}>
+          {/* 行1：状态 + 时间 + 按钮 */}
           <div className="flex items-center justify-between gap-2 mb-1">
             <div className="flex items-center gap-1.5 min-w-0 flex-1">
-              {renaming ? (
+              {/* 打开状态指示 */}
+              {isOpen && (
+                <span className="text-[10px] font-[510]" style={{
+                  color: isActive ? 'var(--accent)' : 'var(--success)',
+                }}>
+                  {isActive ? '● 当前' : '● 运行中'}
+                </span>
+              )}
+
+              {/* 重命名输入框 */}
+              {renaming && (
                 <input
                   ref={nameRef}
                   value={nameVal}
@@ -138,32 +159,16 @@ export function SessionItem({
                   }}
                   onBlur={submitName}
                   placeholder="Session 名称..."
-                  className="flex-1 h-6 px-2 text-[13px] rounded-[5px] outline-none max-w-[320px]"
+                  className="flex-1 h-6 px-2 text-[12px] rounded-[4px] outline-none max-w-[260px]"
                   style={{ background: 'rgba(255,255,255,0.04)', color: 'var(--accent)', border: '1px solid var(--accent-border)', fontWeight: 590 }}
                 />
-              ) : session.customName ? (
-                <>
-                  <span
-                    className="text-[13px] font-[590] truncate cursor-text"
-                    style={{ color: 'var(--accent)', letterSpacing: '-0.01em' }}
-                    onDoubleClick={e => { e.stopPropagation(); setRenaming(true) }}
-                  >
-                    {searchQuery ? highlight(session.customName, searchQuery) : session.customName}
-                  </span>
-                  <button
-                    className="name-btn shrink-0 w-[18px] h-[18px] flex items-center justify-center rounded-[4px] cursor-pointer"
-                    style={{ background: 'rgba(255,255,255,0.03)' }}
-                    onClick={e => { e.stopPropagation(); setRenaming(true) }}
-                  >
-                    <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="var(--text-muted)" strokeWidth="1.5" strokeLinecap="round">
-                      <path d="M11.5 1.5l3 3-9 9H2.5v-3l9-9z" />
-                    </svg>
-                  </button>
-                </>
-              ) : (
+              )}
+
+              {/* 无名称时的命名按钮 */}
+              {!isOpen && !renaming && !session.customName && (
                 <button
-                  className="name-btn shrink-0 flex items-center gap-1 px-1.5 py-px rounded-[4px] text-[10px] font-[510] cursor-pointer"
-                  style={{ color: 'var(--text-muted)', border: '1px dashed rgba(255,255,255,0.1)' }}
+                  className="name-btn shrink-0 text-[10px] font-[510] cursor-pointer"
+                  style={{ color: 'var(--text-muted)' }}
                   onClick={e => { e.stopPropagation(); setNameVal(''); setRenaming(true) }}
                 >
                   + 命名
@@ -172,29 +177,28 @@ export function SessionItem({
             </div>
 
             <div className="flex items-center gap-1.5 shrink-0">
+              {/* Resume / 切换 按钮 */}
               {status === 'loading' ? (
-                <span className="tag" style={{ background: 'rgba(255,255,255,0.04)', color: 'var(--text-tertiary)' }}>打开中...</span>
+                <span className="text-[10px] font-[510]" style={{ color: 'var(--text-muted)' }}>打开中...</span>
               ) : status === 'success' ? (
-                <span className="tag" style={{ background: 'var(--success-dim)', color: 'var(--success)' }}>已打开</span>
+                <span className="text-[10px] font-[510]" style={{ color: 'var(--success)' }}>已打开</span>
               ) : status === 'error' ? (
-                <span className="tag" style={{ background: 'var(--accent-dim)', color: 'var(--accent)' }} title={error}>{error || '失败'}</span>
+                <span className="text-[10px] font-[510]" style={{ color: 'var(--accent)' }}>{error || '失败'}</span>
               ) : (
                 <button
-                  onClick={e => { e.stopPropagation(); resume() }}
-                  className={isOpen ? 'tag cursor-pointer' : 'resume-btn tag cursor-pointer'}
+                  onClick={e => { e.stopPropagation(); doResume() }}
+                  className={isOpen ? 'text-[10px] font-[510] cursor-pointer' : 'resume-btn text-[10px] font-[510] cursor-pointer px-2 py-0.5 rounded-[4px]'}
                   style={{
-                    background: isOpen ? 'rgba(255,255,255,0.05)' : 'var(--accent)',
-                    color: isOpen ? 'var(--text-secondary)' : '#fff',
-                    fontWeight: 590,
-                    border: isOpen ? '1px solid var(--border)' : 'none',
+                    background: isOpen ? 'transparent' : 'var(--accent)',
+                    color: isOpen ? 'var(--text-muted)' : '#fff',
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.background = isOpen ? 'rgba(255,255,255,0.08)' : 'var(--accent-hover)' }}
-                  onMouseLeave={e => { e.currentTarget.style.background = isOpen ? 'rgba(255,255,255,0.05)' : 'var(--accent)' }}
+                  onMouseEnter={e => { if (!isOpen) e.currentTarget.style.background = 'var(--accent-hover)' }}
+                  onMouseLeave={e => { if (!isOpen) e.currentTarget.style.background = 'var(--accent)' }}
                 >
                   {isOpen ? '切换' : 'Resume'}
                 </button>
               )}
-              <span className="text-[11px] font-[510] tabular-nums" style={{ color: 'var(--text-muted)', fontFamily: "'SF Mono', monospace" }}>
+              <span className="text-[10px] font-[510] tabular-nums" style={{ color: 'var(--text-muted)', fontFamily: "'SF Mono', monospace" }}>
                 {time}
               </span>
             </div>
@@ -204,19 +208,19 @@ export function SessionItem({
           <p
             className="text-[13px] leading-[1.5] truncate"
             style={{
-              color: session.customName ? 'var(--text-tertiary)' : 'var(--text-secondary)',
-              fontWeight: session.customName ? 400 : 510,
+              color: 'var(--text-secondary)',
+              fontWeight: 400,
               letterSpacing: '-0.01em',
             }}
             title={session.firstPrompt}
           >
-            {searchQuery ? highlight(truncate(session.firstPrompt, 90), searchQuery) : truncate(session.firstPrompt, 90)}
+            {searchQuery ? highlight(truncate(session.firstPrompt, 85), searchQuery) : truncate(session.firstPrompt, 85)}
           </p>
 
           {/* summary */}
           {session.summary && (
-            <p className="text-[12px] mt-0.5 truncate" style={{ color: 'var(--text-muted)', letterSpacing: '-0.01em' }}>
-              {searchQuery ? highlight(truncate(session.summary, 100), searchQuery) : truncate(session.summary, 100)}
+            <p className="text-[11px] mt-0.5 truncate" style={{ color: 'var(--text-muted)' }}>
+              {searchQuery ? highlight(truncate(session.summary, 90), searchQuery) : truncate(session.summary, 90)}
             </p>
           )}
 
@@ -224,34 +228,32 @@ export function SessionItem({
           {searchMatches && searchMatches.length > 0 && (
             <div className="mt-1.5 space-y-0.5">
               {searchMatches.map((m, i) => (
-                <div key={i} className="flex items-start gap-1.5 text-[11px] rounded-[4px] px-2 py-1"
-                  style={{ background: 'var(--accent-dim)', color: 'var(--text-tertiary)' }}>
-                  <span style={{ color: 'var(--accent)', fontSize: '8px', marginTop: '3px', flexShrink: 0 }}>●</span>
+                <div key={i} className="flex items-start gap-1.5 text-[10px] rounded-[3px] px-1.5 py-0.5"
+                  style={{ background: 'var(--accent-dim)', color: 'var(--text-muted)' }}>
+                  <span style={{ color: 'var(--accent)', fontSize: '7px', marginTop: '3px', flexShrink: 0 }}>●</span>
                   <span className="truncate">{searchQuery ? highlight(m.highlight, searchQuery) : m.highlight}</span>
                 </div>
               ))}
             </div>
           )}
 
-          {/* 元信息 */}
-          <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-            <span className="tag" style={{ background: color + '14', color }}>
+          {/* 元信息 — 纯灰色，无彩色标签 */}
+          <div className="flex items-center gap-1.5 mt-1.5">
+            <span className="text-[10px] font-[510]" style={{ color: 'var(--text-muted)' }}>
               {session.projectName}
             </span>
-            <span className="text-[10px] font-[510]" style={{
-              color: 'var(--text-muted)',
-              fontFamily: "'SF Mono', 'JetBrains Mono', monospace",
-            }}>
+            <span className="text-[10px]" style={{ color: 'var(--text-muted)', opacity: 0.5 }}>·</span>
+            <span className="text-[10px]" style={{ color: 'var(--text-muted)', fontFamily: "'SF Mono', monospace" }}>
               {shortenPath(session.projectPath, homedir)}
             </span>
-            {session.gitBranch && (
-              <span className="tag" style={{ background: 'var(--info-dim)', color: 'var(--info)' }}>
-                {session.gitBranch}
-              </span>
+            {session.messageCount > 0 && (
+              <>
+                <span className="text-[10px]" style={{ color: 'var(--text-muted)', opacity: 0.5 }}>·</span>
+                <span className="text-[10px] tabular-nums" style={{ color: 'var(--text-muted)' }}>
+                  {session.messageCount} msgs
+                </span>
+              </>
             )}
-            <span className="text-[10px] font-[510] tabular-nums" style={{ color: 'var(--text-muted)' }}>
-              {session.messageCount} msgs
-            </span>
           </div>
         </div>
       </div>
