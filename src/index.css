@@ -50,6 +50,14 @@ body {
   background-color: var(--bg-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+  height: 100vh;
+}
+
+/* Electron 原生标题栏拖拽区域 */
+#root {
+  height: 100vh;
+  overflow: hidden;
 }
 
 /* 滚动条 */

@@ -1,4 +1,4 @@
-// 单个 Session 卡片组件
+// 单个 Session 卡片组件 — 通过 IPC 进行操作
 import type { Session, SearchMatch } from '../types/session'
 import { formatRelativeTime } from '../utils/time'
 import { getProjectColor } from '../utils/color'
@@ -10,7 +10,7 @@ interface SessionItemProps {
   session: Session
   isSelected?: boolean
   homedir?: string
-  onResume?: (session: Session) => Promise<void>
+  onResume?: (session: Session) => void
   triggerResume?: boolean
   onTriggerResumeHandled?: () => void
   searchMatches?: SearchMatch[]
@@ -83,17 +83,14 @@ export function SessionItem({
     }
   }, [isRenaming])
 
+  // 通过 IPC 设置名称
   const submitRename = async () => {
     setIsRenaming(false)
     const newName = nameInput.trim()
     if (newName === (session.customName || '')) return
     try {
-      const res = await fetch(`/api/sessions/${session.sessionId}/name`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newName }),
-      })
-      if (res.ok) onNameChanged?.()
+      await window.electronAPI.sessions.setName(session.sessionId, newName)
+      onNameChanged?.()
     } catch {}
   }
 
@@ -102,7 +99,7 @@ export function SessionItem({
     setResumeStatus('loading')
     setErrorMsg('')
     try {
-      await onResume(session)
+      onResume(session)
       setResumeStatus('success')
       setTimeout(() => setResumeStatus('idle'), 2000)
     } catch (err) {
@@ -204,7 +201,7 @@ export function SessionItem({
                 </span>
               ) : resumeStatus === 'success' ? (
                 <span className="tag" style={{ background: 'var(--success-dim)', color: 'var(--success)' }}>
-                  ✓ 已打开
+                  已打开
                 </span>
               ) : resumeStatus === 'error' ? (
                 <span className="tag" style={{ background: 'var(--accent-dim)', color: 'var(--accent)' }} title={errorMsg}>
@@ -218,7 +215,7 @@ export function SessionItem({
                   onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--accent-hover)' }}
                   onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--accent)' }}
                 >
-                  Resume ▸
+                  Resume
                 </button>
               )}
 

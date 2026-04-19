@@ -11,8 +11,8 @@ interface SessionListProps {
   selectedIndex?: number
   /** 用于 shortenPath 的 home 目录 */
   homedir?: string
-  /** Resume 回调 */
-  onResume?: (session: Session) => Promise<void>
+  /** Resume 回调（同步，由 App 内部创建终端） */
+  onResume?: (session: Session) => void
   /** 通过键盘 Enter 触发 resume 的目标 sessionId */
   keyboardResumeId?: string | null
   /** 键盘 resume 已被 SessionItem 接管后的回调 */
@@ -73,7 +73,7 @@ export function SessionList({
     )
   }
 
-  // 空状态（搜索无结果 vs 完全没有数据）
+  // 空状态
   if (sessions.length === 0) {
     return (
       <div
@@ -96,8 +96,7 @@ export function SessionList({
 
   return (
     <div>
-      {/* Session 列表 */}
-      <div className="overflow-y-auto" style={{ maxHeight: 'calc(100vh - 160px)' }}>
+      <div className="overflow-y-auto" style={{ maxHeight: 'calc(100vh - 200px)' }}>
         {sessions.map((session, index) => (
           <SessionItem
             key={session.sessionId}

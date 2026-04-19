@@ -1,4 +1,4 @@
-// 搜索与过滤逻辑 hook — 支持全文搜索
+// 搜索与过滤逻辑 hook — 通过 Electron IPC 全文搜索
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import type { Session, SortMode, SearchMatch } from '../types/session'
 
@@ -19,7 +19,7 @@ interface UseSearchReturn {
   filteredSessions: Session[]
   /** 过滤后的数量 */
   filteredCount: number
-  /** 全文搜索匹配结果 (sessionId → 匹配片段) */
+  /** 全文搜索匹配结果 (sessionId -> 匹配片段) */
   searchMatches: Record<string, SearchMatch[]>
   /** 是否正在搜索 */
   isSearching: boolean
@@ -27,7 +27,7 @@ interface UseSearchReturn {
 
 /**
  * 搜索过滤 hook
- * 先搜 firstPrompt + summary，同时调后端全文搜索 API 搜历史记录
+ * 先搜 firstPrompt + summary，同时通过 IPC 调全文搜索
  */
 export function useSearch(sessions: Session[]): UseSearchReturn {
   const [query, setQuery] = useState('')
@@ -39,7 +39,7 @@ export function useSearch(sessions: Session[]): UseSearchReturn {
   // 防抖计时器
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // 全文搜索（调后端 API，带防抖）
+  // 全文搜索（通过 IPC 调 main process，带防抖）
   useEffect(() => {
     if (debounceRef.current) {
       clearTimeout(debounceRef.current)
@@ -56,13 +56,10 @@ export function useSearch(sessions: Session[]): UseSearchReturn {
 
     debounceRef.current = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/search?q=${encodeURIComponent(trimmed)}`)
-        if (res.ok) {
-          const data = await res.json()
-          setSearchMatches(data.results || {})
-        }
+        const data = await window.electronAPI.sessions.search(trimmed)
+        setSearchMatches(data.results || {})
       } catch {
-        // 搜索 API 失败不影响本地搜索
+        // 搜索失败不影响本地搜索
       } finally {
         setIsSearching(false)
       }
@@ -91,7 +88,7 @@ export function useSearch(sessions: Session[]): UseSearchReturn {
         const nameMatch = s.customName?.toLowerCase().includes(lowerQuery)
         const promptMatch = s.firstPrompt?.toLowerCase().includes(lowerQuery)
         const summaryMatch = s.summary?.toLowerCase().includes(lowerQuery)
-        // 全文搜索匹配（来自后端 API）
+        // 全文搜索匹配（来自 IPC）
         const fullTextMatch = s.sessionId in searchMatches
         return nameMatch || promptMatch || summaryMatch || fullTextMatch
       })

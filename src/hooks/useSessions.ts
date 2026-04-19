@@ -1,6 +1,6 @@
-// Session 数据获取 hook
+// Session 数据获取 hook — 通过 Electron IPC 读取
 import { useState, useEffect, useCallback } from 'react'
-import type { Session, SessionsResponse } from '../types/session'
+import type { Session } from '../types/session'
 
 interface UseSessionsReturn {
   sessions: Session[]
@@ -30,9 +30,8 @@ export function useSessions(): UseSessionsReturn {
     async function fetchSessions() {
       try {
         if (refreshKey === 0) setLoading(true)
-        const res = await fetch('/api/sessions')
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        const data: SessionsResponse = await res.json()
+        // 通过 Electron IPC 调用 main process 加载数据
+        const data = await window.electronAPI.sessions.load()
         setSessions(data.sessions)
         setTotalCount(data.totalCount)
         setProjects(data.projects)

@@ -22,7 +22,7 @@ export interface Session extends SessionEntry {
   customName?: string
 }
 
-/** GET /api/sessions 的响应 */
+/** sessions:load IPC 的响应 */
 export interface SessionsResponse {
   sessions: Session[]
   totalCount: number
@@ -39,7 +39,26 @@ export interface SearchMatch {
   highlight: string
 }
 
-/** 全文搜索 API 响应 */
+/** 全文搜索响应 */
 export interface SearchResponse {
   results: Record<string, SearchMatch[]>
+}
+
+/** 布局类型 */
+export type LayoutType = 'two-col' | 'three-col' | 'quad' | 'stack'
+
+/** 终端实例信息（在 renderer 中管理） */
+export interface TerminalInfo {
+  /** 终端唯一 ID（由 main process 返回） */
+  terminalId: string
+  /** 关联的 session ID */
+  sessionId: string
+  /** 项目路径 */
+  projectPath: string
+  /** 项目名称 */
+  projectName?: string
+  /** session 的 firstPrompt */
+  firstPrompt?: string
+  /** session 的自定义名称 */
+  customName?: string
 }

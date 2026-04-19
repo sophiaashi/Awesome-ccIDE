@@ -7,13 +7,13 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  // Electron renderer 需要用相对路径加载资源
+  base: './',
   server: {
     port: 3456,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:3457',
-        changeOrigin: true,
-      },
-    },
+  },
+  build: {
+    outDir: 'dist',
+    emptyOutDir: true,
   },
 })

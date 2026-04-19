@@ -1,4 +1,6 @@
-// 主应用组件
+// 主应用组件 — Electron 桌面应用布局
+// 左侧：Session 列表（搜索+过滤）
+// 右侧：终端面板区域（xterm.js grid 布局）+ 侧边栏（已打开终端列表）
 import { useSessions } from './hooks/useSessions'
 import { useSearch } from './hooks/useSearch'
 import { useKeyboard } from './hooks/useKeyboard'
@@ -7,15 +9,13 @@ import { SearchBar } from './components/SearchBar'
 import { FilterBar } from './components/FilterBar'
 import { LayoutBar } from './components/LayoutBar'
 import { Sidebar } from './components/Sidebar'
+import { TerminalPanel } from './components/TerminalPanel'
 import { initProjectColors } from './utils/color'
 import { useEffect, useCallback, useState } from 'react'
-import type { Session } from './types/session'
+import type { Session, LayoutType, TerminalInfo } from './types/session'
 
 export default function App() {
   const { sessions, totalCount, projects, homedir, loading, error, refresh } = useSessions()
-
-  // 全屏模式状态
-  const [isFullscreen, setIsFullscreen] = useState(false)
 
   // 搜索与过滤
   const {
@@ -30,163 +30,130 @@ export default function App() {
     searchMatches,
   } = useSearch(sessions)
 
-  /**
-   * 通过键盘 Enter 触发 resume 时，记录目标 sessionId，
-   * 让 SessionItem 组件能感知并显示 loading/success/error 状态
-   */
+  // ========== 终端管理状态 ==========
+
+  /** 已打开的终端列表 */
+  const [openTerminals, setOpenTerminals] = useState<TerminalInfo[]>([])
+  /** 当前激活的终端 ID */
+  const [activeTerminalId, setActiveTerminalId] = useState<string | null>(null)
+  /** 终端面板布局 */
+  const [layout, setLayout] = useState<LayoutType>('quad')
+  /** 侧边栏是否显示（有终端时显示） */
+  const sidebarVisible = openTerminals.length > 0
+
+  /** 通过键盘 Enter 触发 resume 的目标 sessionId */
   const [keyboardResumeId, setKeyboardResumeId] = useState<string | null>(null)
 
+  // ========== 终端操作 ==========
+
   /**
-   * 调用后端 API resume 一个 session
-   * 在新终端窗口中 cd 到项目目录并执行 claude --resume
+   * Resume 一个 session — 通过 IPC 创建新的 pty 终端
    */
-  const handleResume = useCallback(async (session: Session) => {
-    const response = await fetch('/api/resume', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        sessionId: session.sessionId,
-        projectPath: session.projectPath,
-      }),
+  const handleResume = useCallback((session: Session) => {
+    // 异步创建终端，不阻塞 UI
+    ;(async () => {
+      try {
+        const { terminalId } = await window.electronAPI.terminal.create(
+          session.sessionId,
+          session.projectPath,
+        )
+
+        const terminalInfo: TerminalInfo = {
+          terminalId,
+          sessionId: session.sessionId,
+          projectPath: session.projectPath,
+          projectName: session.projectName,
+          firstPrompt: session.firstPrompt,
+          customName: session.customName,
+        }
+
+        setOpenTerminals(prev => [...prev, terminalInfo])
+        setActiveTerminalId(terminalId)
+      } catch (err) {
+        console.error('创建终端失败:', err)
+      }
+    })()
+  }, [])
+
+  /**
+   * 关闭终端
+   */
+  const handleCloseTerminal = useCallback((terminalId: string) => {
+    // 通知 main process 关闭 pty
+    window.electronAPI.terminal.close(terminalId)
+
+    setOpenTerminals(prev => {
+      const next = prev.filter(t => t.terminalId !== terminalId)
+      // 如果关闭的是当前激活的终端，切换到最后一个
+      setActiveTerminalId(current => {
+        if (current === terminalId) {
+          return next.length > 0 ? next[next.length - 1].terminalId : null
+        }
+        return current
+      })
+      return next
     })
-
-    if (!response.ok) {
-      const data = await response.json().catch(() => ({ error: '请求失败' }))
-      throw new Error(data.error || `HTTP ${response.status}`)
-    }
-
-    return await response.json()
   }, [])
 
   /**
-   * 切换全屏模式
+   * 激活终端
    */
-  const toggleFullscreen = useCallback(() => {
-    setIsFullscreen(prev => !prev)
+  const handleActivateTerminal = useCallback((terminalId: string) => {
+    setActiveTerminalId(terminalId)
   }, [])
 
   /**
-   * 退出全屏模式
+   * 切换布局
    */
-  const exitFullscreen = useCallback(() => {
-    setIsFullscreen(false)
+  const handleLayoutChange = useCallback((newLayout: LayoutType) => {
+    setLayout(newLayout)
   }, [])
 
   // 键盘导航
   const { selectedIndex, searchInputRef } = useKeyboard({
     itemCount: filteredSessions.length,
-    // Enter 键 resume 当前选中的 session
-    // 通过设置 keyboardResumeId 通知 SessionItem 触发内部状态更新
     onEnter: (index) => {
       const session = filteredSessions[index]
       if (session) {
         setKeyboardResumeId(session.sessionId)
       }
     },
-    // Escape 键退出全屏模式
-    onEscape: isFullscreen ? exitFullscreen : undefined,
   })
 
-  // 项目颜色初始化（保证颜色分配一致性）
+  // 项目颜色初始化
   useEffect(() => {
     if (projects.length > 0) {
       initProjectColors(projects)
     }
   }, [projects])
 
-  // 全屏模式渲染
-  if (isFullscreen) {
-    return (
-      <div
-        className="h-screen flex"
-        style={{ backgroundColor: 'var(--bg-primary)' }}
-      >
-        {/* 侧边栏 */}
-        <Sidebar
-          visible={isFullscreen}
-          onExitFullscreen={exitFullscreen}
-        />
-
-        {/* 主区域 — 全屏模式下的占位/信息展示 */}
-        <div className="flex-1 flex flex-col items-center justify-center min-w-0">
-          <div className="text-center max-w-md px-6">
-            {/* Logo */}
-            <div className="mb-6">
-              <h1
-                className="text-xl font-semibold"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                <span style={{ color: 'var(--accent)' }}>Claude</span> Session Manager
-              </h1>
-            </div>
-
-            {/* 提示文字 */}
-            <div
-              className="mb-4"
-              style={{ color: 'var(--text-secondary)' }}
-            >
-              <svg
-                className="mx-auto mb-3"
-                width="48"
-                height="48"
-                viewBox="0 0 48 48"
-                fill="none"
-                style={{ color: 'var(--text-muted)' }}
-              >
-                <rect x="4" y="6" width="40" height="36" rx="4" stroke="currentColor" strokeWidth="2" fill="none" />
-                <rect x="8" y="10" width="14" height="28" rx="2" stroke="currentColor" strokeWidth="1.5" fill="none" opacity="0.5" />
-                <circle cx="31" cy="24" r="4" stroke="currentColor" strokeWidth="1.5" fill="none" />
-                <path d="M34 27L37 30" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-              </svg>
-              <p className="text-sm mb-2">
-                从左侧侧边栏选择一个终端窗口
-              </p>
-              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                点击后对应的终端窗口将被置顶显示
-              </p>
-            </div>
-
-            {/* 快捷键提示 */}
-            <div
-              className="flex items-center justify-center gap-4 text-xs"
-              style={{ color: 'var(--text-muted)' }}
-            >
-              <span className="flex items-center gap-1">
-                <kbd
-                  className="px-1.5 py-0.5 rounded text-xs"
-                  style={{
-                    backgroundColor: 'var(--bg-tertiary)',
-                    border: '1px solid var(--border)',
-                    fontSize: '11px',
-                  }}
-                >
-                  Esc
-                </kbd>
-                退出全屏
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // 默认列表视图渲染
   return (
-    <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
-      {/* 顶部标题栏 */}
-      <header
-        className="sticky top-0 z-10"
+    <div
+      className="h-screen flex overflow-hidden"
+      style={{ backgroundColor: 'var(--bg-primary)' }}
+    >
+      {/* ========== 左侧面板：Session 列表 ========== */}
+      <div
+        className="flex flex-col shrink-0 border-r"
         style={{
+          width: '420px',
+          borderColor: 'var(--border)',
           backgroundColor: 'var(--bg-primary)',
-          borderBottom: '1px solid var(--border)',
-          backdropFilter: 'blur(12px)',
         }}
       >
-        <div className="max-w-5xl mx-auto px-6 pt-5 pb-4">
-          {/* 标题行 */}
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-xl font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
+        {/* 标题栏拖拽区域（macOS hiddenInset 标题栏） */}
+        <div
+          className="shrink-0"
+          style={{
+            height: '38px',
+            WebkitAppRegion: 'drag' as any,
+          }}
+        />
+
+        {/* 标题 */}
+        <div className="px-5 pb-3">
+          <div className="flex items-center justify-between mb-3">
+            <h1 className="text-lg font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
               <span style={{ color: 'var(--accent)' }}>Claude</span>
               <span className="font-normal ml-1.5" style={{ color: 'var(--text-secondary)' }}>Sessions</span>
             </h1>
@@ -214,15 +181,12 @@ export default function App() {
             />
           )}
         </div>
-      </header>
 
-      {/* 主内容区 */}
-      <main className="max-w-5xl mx-auto">
         {/* 过滤/排序栏 + 布局控制 */}
         {!loading && !error && (
           <div
-            className="flex items-center justify-between px-6 py-2.5"
-            style={{ borderBottom: '1px solid var(--border)' }}
+            className="flex items-center justify-between shrink-0"
+            style={{ borderBottom: '1px solid var(--border)', borderTop: '1px solid var(--border)' }}
           >
             <FilterBar
               projects={projects}
@@ -232,14 +196,14 @@ export default function App() {
               onSortModeChange={setSortMode}
             />
             <LayoutBar
-              isFullscreen={isFullscreen}
-              onToggleFullscreen={toggleFullscreen}
+              activeLayout={layout}
+              onLayoutChange={handleLayoutChange}
             />
           </div>
         )}
 
         {/* Session 列表 */}
-        <div className="pt-2 pb-6">
+        <div className="flex-1 overflow-y-auto pt-2 pb-4">
           <SessionList
             sessions={filteredSessions}
             loading={loading}
@@ -255,7 +219,28 @@ export default function App() {
             onNameChanged={refresh}
           />
         </div>
-      </main>
+      </div>
+
+      {/* ========== 右侧面板：终端区域 ========== */}
+      <div className="flex-1 flex min-w-0 h-full">
+        {/* 终端面板 */}
+        <TerminalPanel
+          terminals={openTerminals}
+          layout={layout}
+          activeTerminalId={activeTerminalId}
+          onCloseTerminal={handleCloseTerminal}
+          onActivateTerminal={handleActivateTerminal}
+        />
+
+        {/* 侧边栏（列出已打开的终端） */}
+        <Sidebar
+          visible={sidebarVisible}
+          terminals={openTerminals}
+          activeTerminalId={activeTerminalId}
+          onActivateTerminal={handleActivateTerminal}
+          onCloseTerminal={handleCloseTerminal}
+        />
+      </div>
     </div>
   )
 }
