@@ -166,7 +166,7 @@ export function SessionItem({
               )}
 
               {/* 无名称时的命名按钮 */}
-              {!isOpen && !renaming && !session.customName && (
+              {!renaming && !session.customName && (
                 <button
                   className="name-btn shrink-0 text-[10px] font-[510] cursor-pointer"
                   style={{ color: 'var(--text-muted)' }}
