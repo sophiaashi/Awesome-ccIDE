@@ -16,6 +16,8 @@ interface SessionItemProps {
   searchMatches?: SearchMatch[]
   searchQuery?: string
   onNameChanged?: () => void
+  isOpen?: boolean
+  isActive?: boolean
 }
 
 function truncate(text: string, max: number): string {
@@ -45,6 +47,7 @@ export function SessionItem({
   session, isSelected = false, homedir = '', onResume,
   triggerResume = false, onTriggerResumeHandled,
   searchMatches, searchQuery, onNameChanged,
+  isOpen = false, isActive = false,
 }: SessionItemProps) {
   const color = getProjectColor(session.projectName)
   const time = formatRelativeTime(session.modified)
@@ -95,13 +98,22 @@ export function SessionItem({
   return (
     <div
       ref={ref}
-      className={`session-card group mx-2.5 mb-1.5 cursor-pointer ${isSelected ? 'selected' : ''}`}
+      className={`session-card group ml-5 mr-4 mb-1.5 cursor-pointer ${isSelected ? 'selected' : ''}`}
     >
       <div className="flex items-stretch">
-        {/* 项目色条 */}
-        <div className="w-[3px] shrink-0 rounded-l-lg" style={{ backgroundColor: color, opacity: isSelected ? 1 : 0.5 }} />
+        {/* 项目色条 + 打开状态 */}
+        <div className="w-[3px] shrink-0 rounded-l-lg relative" style={{
+          backgroundColor: isActive ? 'var(--accent)' : isOpen ? 'var(--success)' : color,
+          opacity: isActive ? 1 : isOpen ? 0.9 : isSelected ? 1 : 0.5,
+        }}>
+          {isOpen && (
+            <div className="absolute top-2 left-[-1px] w-[5px] h-[5px] rounded-full" style={{
+              backgroundColor: isActive ? 'var(--accent)' : 'var(--success)',
+            }} />
+          )}
+        </div>
 
-        <div className="flex-1 min-w-0 px-3.5 py-3">
+        <div className="flex-1 min-w-0 py-3" style={{ paddingLeft: '14px', paddingRight: '14px' }}>
           {/* 行1：名称 + 时间 + Resume */}
           <div className="flex items-center justify-between gap-2 mb-1">
             <div className="flex items-center gap-1.5 min-w-0 flex-1">

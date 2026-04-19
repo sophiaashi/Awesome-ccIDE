@@ -23,6 +23,10 @@ interface SessionListProps {
   searchQuery?: string
   /** 名称更新后的回调 */
   onNameChanged?: () => void
+  /** 已打开终端的 sessionId 集合 */
+  openSessionIds?: Set<string>
+  /** 当前激活的 session ID */
+  activeSessionId?: string
 }
 
 export function SessionList({
@@ -38,6 +42,8 @@ export function SessionList({
   searchMatches = {},
   searchQuery = '',
   onNameChanged,
+  openSessionIds,
+  activeSessionId,
 }: SessionListProps) {
   // 加载中状态
   if (loading) {
@@ -109,6 +115,8 @@ export function SessionList({
             searchMatches={searchMatches[session.sessionId]}
             searchQuery={searchQuery}
             onNameChanged={onNameChanged}
+            isOpen={openSessionIds?.has(session.sessionId)}
+            isActive={activeSessionId === session.sessionId}
           />
         ))}
       </div>
