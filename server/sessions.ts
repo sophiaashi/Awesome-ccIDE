@@ -146,6 +146,61 @@ export async function loadAllSessions(): Promise<{
     }
   }
 
+  // 补充未被 index 收录的活跃 session（扫描 .jsonl 文件）
+  const indexedIds = new Set(allSessions.map(s => s.sessionId))
+  const projectDirs = await glob(path.join(homeDir, '.claude', 'projects', '*'))
+  for (const projDir of projectDirs) {
+    try {
+      const jsonlFiles = await glob(path.join(projDir, '*.jsonl'))
+      for (const jsonlPath of jsonlFiles) {
+        const sessionId = path.basename(jsonlPath, '.jsonl')
+        // 跳过已索引的和非 UUID 格式的
+        if (indexedIds.has(sessionId) || !/^[0-9a-f]{8}-/.test(sessionId)) continue
+
+        try {
+          const stat = require('fs').statSync(jsonlPath)
+          // 从 jsonl 第一行提取信息
+          const firstLines = readFileSync(jsonlPath, 'utf-8').split('\n').slice(0, 20)
+          let firstPrompt = ''
+          let projectPath = homeDir
+          let cwd = ''
+          let created = new Date(stat.birthtimeMs).toISOString()
+
+          for (const line of firstLines) {
+            if (!line.trim()) continue
+            try {
+              const entry = JSON.parse(line)
+              if (entry.type === 'user' && entry.message?.content && !firstPrompt) {
+                const content = entry.message.content
+                firstPrompt = typeof content === 'string' ? content.slice(0, 200) : ''
+              }
+              if (entry.cwd && !cwd) cwd = entry.cwd
+              if (entry.timestamp && !created) created = entry.timestamp
+            } catch {}
+          }
+
+          projectPath = cwd || homeDir
+          const projectName = extractProjectName(projectPath)
+          projectSet.add(projectName)
+
+          allSessions.push({
+            sessionId,
+            fullPath: jsonlPath,
+            fileMtime: stat.mtimeMs,
+            firstPrompt: firstPrompt || `(session ${sessionId.slice(0, 8)})`,
+            messageCount: 0,
+            created,
+            modified: new Date(stat.mtimeMs).toISOString(),
+            gitBranch: '',
+            projectPath,
+            projectName,
+            isSidechain: false,
+          })
+        } catch {}
+      }
+    } catch {}
+  }
+
   // 去重：同一个 sessionId 可能出现在多个 index 文件中，保留最新的
   const sessionMap = new Map<string, SessionData>()
   for (const session of allSessions) {
