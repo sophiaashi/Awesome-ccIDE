@@ -96,14 +96,30 @@ ipcMain.handle('terminal:create', async (_event, sessionId: string, projectPath:
   // 确定 shell 路径
   const shell = process.env.SHELL || '/bin/zsh'
 
-  // 创建 pty 实例
-  const ptyProcess = pty.spawn(shell, [], {
+  // 构建完整的 PATH（Electron 打包后 shell 可能缺少用户 PATH）
+  const userPaths = [
+    '/usr/local/bin',
+    '/opt/homebrew/bin',
+    '/opt/homebrew/sbin',
+    `${os.homedir()}/.nvm/versions/node/current/bin`,
+    `${os.homedir()}/.bun/bin`,
+    `${os.homedir()}/.cargo/bin`,
+    '/usr/bin',
+    '/bin',
+    '/usr/sbin',
+    '/sbin',
+  ]
+  const fullPath = [...new Set([...userPaths, ...(process.env.PATH?.split(':') || [])])].join(':')
+
+  // 创建 pty 实例（login shell 以加载用户配置）
+  const ptyProcess = pty.spawn(shell, ['--login'], {
     name: 'xterm-256color',
     cols: 80,
     rows: 24,
     cwd: projectPath || os.homedir(),
     env: {
       ...process.env,
+      PATH: fullPath,
       TERM: 'xterm-256color',
       COLORTERM: 'truecolor',
     } as Record<string, string>,
