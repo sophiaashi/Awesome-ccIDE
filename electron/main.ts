@@ -49,7 +49,8 @@ function createWindow(): void {
   if (process.env.VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL)
   } else {
-    mainWindow.loadFile(path.join(__dirname, '../dist/index.html'))
+    // __dirname 是 dist-electron/electron/，所以需要上两级到项目根再进 dist
+    mainWindow.loadFile(path.join(__dirname, '../../dist/index.html'))
   }
 
   mainWindow.on('closed', () => {
