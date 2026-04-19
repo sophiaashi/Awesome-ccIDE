@@ -147,10 +147,11 @@ ipcMain.handle('terminal:create', async (_event, sessionId: string, projectPath:
     }
   })
 
-  // 发送 claude --resume 命令
-  // 先等 shell 初始化完成再发命令
+  // 先等 shell 初始化，然后发送 claude 命令
+  // sessionId 为空 → 新建 session，否则 resume 指定 session
   setTimeout(() => {
-    ptyProcess.write(`claude --resume ${sessionId}\r`)
+    const cmd = sessionId ? `claude --resume ${sessionId}\r` : `claude\r`
+    ptyProcess.write(cmd)
   }, 300)
 
   return { terminalId }

@@ -76,6 +76,30 @@ export default function App() {
   }, [])
 
   /**
+   * 新建 session — 在 home 目录打开一个新终端运行 claude（不 resume）
+   */
+  const handleNewSession = useCallback(() => {
+    ;(async () => {
+      try {
+        const projectPath = homedir || '/Users/sophia'
+        const { terminalId } = await window.electronAPI.terminal.create('', projectPath)
+
+        const terminalInfo: TerminalInfo = {
+          terminalId,
+          sessionId: '',
+          projectPath,
+          projectName: 'new',
+          firstPrompt: '新 session',
+        }
+        setOpenTerminals(prev => [...prev, terminalInfo])
+        setActiveTerminalId(terminalId)
+      } catch (err) {
+        console.error('新建 session 失败:', err)
+      }
+    })()
+  }, [homedir])
+
+  /**
    * 关闭终端
    */
   const handleCloseTerminal = useCallback((terminalId: string) => {
@@ -279,13 +303,30 @@ export default function App() {
           </div>
 
           {!loading && !error && (
-            <SearchBar
-              query={query}
-              onQueryChange={setQuery}
-              filteredCount={filteredCount}
-              totalCount={totalCount}
-              inputRef={searchInputRef}
-            />
+            <>
+              <SearchBar
+                query={query}
+                onQueryChange={setQuery}
+                filteredCount={filteredCount}
+                totalCount={totalCount}
+                inputRef={searchInputRef}
+              />
+              <button
+                onClick={handleNewSession}
+                className="w-full mt-2 flex items-center justify-center gap-1.5 h-9 rounded-lg cursor-pointer text-[13px] font-[590] transition-colors"
+                style={{
+                  background: 'var(--accent)',
+                  color: '#fff',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'var(--accent-hover)' }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'var(--accent)' }}
+              >
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <path d="M8 3v10M3 8h10" />
+                </svg>
+                新建 Session
+              </button>
+            </>
           )}
         </div>
 
