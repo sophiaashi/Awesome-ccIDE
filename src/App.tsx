@@ -221,6 +221,23 @@ export default function App() {
       >
         {/* macOS 标题栏拖拽区域 */}
         <div className="shrink-0 flex items-end justify-end gap-1 px-2" style={{ height: '38px', WebkitAppRegion: 'drag' } as React.CSSProperties}>
+          {/* 刷新 */}
+          <button
+            onClick={refresh}
+            className="cursor-pointer flex items-center justify-center rounded-md mb-1"
+            style={{
+              width: '24px', height: '24px',
+              color: 'var(--text-muted)',
+              WebkitAppRegion: 'no-drag',
+            } as React.CSSProperties}
+            title="刷新 session 列表"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M23 4v6h-6" /><path d="M1 20v-6h6" />
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10" />
+              <path d="M20.49 15A9 9 0 0 1 5.64 18.36L1 14" />
+            </svg>
+          </button>
           {/* 主题切换 */}
           <button
             onClick={toggleTheme}
@@ -410,13 +427,15 @@ export default function App() {
           />
         </div>
 
-        {/* Chrome 风格 Tab 栏 */}
-        <TabBar
-          terminals={openTerminals}
-          activeTerminalId={activeTerminalId}
-          onActivate={handleActivateTerminal}
-          onClose={handleCloseTerminal}
-        />
+        {/* Chrome 风格 Tab 栏 — 仅 stack 布局显示 */}
+        {layout === 'stack' && (
+          <TabBar
+            terminals={openTerminals}
+            activeTerminalId={activeTerminalId}
+            onActivate={handleActivateTerminal}
+            onClose={handleCloseTerminal}
+          />
+        )}
 
         {/* 终端面板 */}
         <div className="flex-1 flex min-w-0 overflow-hidden">

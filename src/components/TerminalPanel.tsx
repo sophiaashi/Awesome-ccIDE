@@ -135,38 +135,43 @@ export function TerminalPanel({
     )
   }
 
-  // 堆叠模式：只显示当前激活的终端
-  const visibleTerminals = layout === 'stack'
-    ? terminals.filter(t => t.terminalId === activeTerminalId)
-    : terminals
-
-  // 如果堆叠模式下没有激活的终端，显示第一个
-  const displayTerminals = visibleTerminals.length > 0
-    ? visibleTerminals
-    : layout === 'stack' && terminals.length > 0
-      ? [terminals[0]]
-      : terminals
-
+  // 所有布局都渲染全部 terminal（保持 xterm 实例不被销毁）
+  // stack 模式用 CSS display:none 隐藏非激活的
   return (
     <div
       className="flex-1 min-h-0 p-1"
       style={{
         backgroundColor: 'var(--bg-primary)',
-        ...getGridStyle(layout, displayTerminals.length),
+        ...getGridStyle(layout, layout === 'stack' ? 1 : terminals.length),
       }}
     >
-      {displayTerminals.map((terminal) => (
-        <TerminalPane
-          key={terminal.terminalId}
-          terminalId={terminal.terminalId}
-          title={terminal.customName || terminal.firstPrompt || `Terminal ${terminal.terminalId}`}
-          projectName={terminal.projectName}
-          projectColor={terminal.projectName ? getProjectColor(terminal.projectName) : undefined}
-          isActive={terminal.terminalId === activeTerminalId}
-          onClose={onCloseTerminal}
-          onActivate={onActivateTerminal}
-        />
-      ))}
+      {terminals.map((terminal) => {
+        const isActive = terminal.terminalId === activeTerminalId
+        // stack 模式：只显示 active 的，其他 display:none
+        const hidden = layout === 'stack' && !isActive
+        return (
+          <div
+            key={terminal.terminalId}
+            style={{
+              display: hidden ? 'none' : 'flex',
+              flexDirection: 'column',
+              minHeight: 0,
+              gridColumn: layout === 'stack' ? '1' : undefined,
+              gridRow: layout === 'stack' ? '1' : undefined,
+            }}
+          >
+            <TerminalPane
+              terminalId={terminal.terminalId}
+              title={terminal.customName || terminal.firstPrompt || `Terminal ${terminal.terminalId}`}
+              projectName={terminal.projectName}
+              projectColor={terminal.projectName ? getProjectColor(terminal.projectName) : undefined}
+              isActive={isActive}
+              onClose={onCloseTerminal}
+              onActivate={onActivateTerminal}
+            />
+          </div>
+        )
+      })}
     </div>
   )
 }

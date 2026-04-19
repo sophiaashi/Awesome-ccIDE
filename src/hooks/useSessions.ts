@@ -51,10 +51,7 @@ export function useSessions(): UseSessionsReturn {
       }
     }
     fetch_()
-
-    // 每 5 秒自动轮询一次，捕获新创建的 session（不触发 loading）
-    const timer = setInterval(fetch_, 5000)
-    return () => { cancelled = true; clearInterval(timer) }
+    return () => { cancelled = true }
   }, [refreshKey])
 
   return { sessions, totalCount, projects, homedir, loading, error, refresh }

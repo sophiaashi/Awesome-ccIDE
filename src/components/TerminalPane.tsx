@@ -139,12 +139,21 @@ export function TerminalPane({
     }
   }, [terminalId])
 
-  // 激活时聚焦终端
+  // 激活时聚焦终端并 refit（修复切回后黑屏）
   useEffect(() => {
-    if (isActive && terminalRef.current) {
-      terminalRef.current.focus()
+    if (isActive && terminalRef.current && fitAddonRef.current) {
+      // 延迟 refit 等容器尺寸稳定
+      requestAnimationFrame(() => {
+        try {
+          fitAddonRef.current?.fit()
+          if (terminalRef.current) {
+            window.electronAPI.terminal.resize(terminalId, terminalRef.current.cols, terminalRef.current.rows)
+            terminalRef.current.focus()
+          }
+        } catch {}
+      })
     }
-  }, [isActive])
+  }, [isActive, terminalId])
 
   // 处理关闭
   const handleClose = useCallback((e: React.MouseEvent) => {

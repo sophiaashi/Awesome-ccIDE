@@ -11,15 +11,11 @@
 - 数据源：`~/.claude/projects/*/sessions-index.json` + `~/.claude/history.jsonl`
 - 自定义名称存储：`~/.claude-session-manager/session-names.json`
 
-## 同步铁律（必须严格遵守）
+## 同步规则（用户主导推送节奏）
 
-**所有已确认的改动，必须保持三处同步：**
+**默认：只做本地修改 + 本地 .app 更新，不自动推送远端。**
 
-1. **本地代码** (`~/ccIDE/`)
-2. **远端 git** (`git@github.com:sophiaashi/ccIDE.git`，仓库展示名 `Awesome-ccIDE`)
-3. **GitHub Release 的 DMG 包**（`v1.0.0` 标签）
-
-### 每次改动完成后的标准流程
+### 每次改动的默认流程（无用户指示时）
 
 ```bash
 # 1. 编译检查
@@ -31,10 +27,19 @@ npm run dist
 # 3. 安装到本地 Applications
 rm -rf /Applications/ccIDE.app && cp -R release/mac-arm64/ccIDE.app /Applications/
 
-# 4. 提交并推送代码
-git add -A && git commit -m "..." && git push origin main
+# 4. 本地 git commit（但不 push）
+git add -A && git commit -m "..."
+```
 
-# 5. 更新 GitHub Release DMG（关键步骤，容易遗漏）
+### 推送远端时的流程（用户说「推送」/「push」/「发布」时）
+
+**一旦推送远端，必须同时更新 DMG Release**：
+
+```bash
+# 1. 推送代码
+git push origin main
+
+# 2. 更新 GitHub Release DMG（与 push 绑定，不可分离）
 gh release delete v1.0.0 --repo sophiaashi/Awesome-ccIDE --yes
 gh release create v1.0.0 \
   --repo sophiaashi/Awesome-ccIDE \
@@ -43,11 +48,11 @@ gh release create v1.0.0 \
   release/ccIDE-1.0.0-arm64.dmg
 ```
 
-### DMG 更新频率
+### 关键规则
 
-- **任何用户可见的改动（UI、功能）** → 必须同步更新 DMG
-- **内部重构、注释修改** → 代码推送即可，DMG 可延后
-- **不确定时，默认更新 DMG**。用户下载的是 DMG，不是 git 代码
+- 用户没说「推送」时，**不要自动 `git push`**
+- 用户说「推送」时，**必须同时更新 DMG**（push 和 DMG 更新是原子操作）
+- 本地 Applications 下的 app 每次改动都要更新（用户会直接测试）
 
 ## 构建输出
 
