@@ -26,6 +26,8 @@ export function useSessions(): UseSessionsReturn {
   const refresh = useCallback(() => setRefreshKey(k => k + 1), [])
 
   useEffect(() => {
+    let cancelled = false
+
     async function fetch_() {
       try {
         if (refreshKey === 0) setLoading(true)
@@ -37,17 +39,22 @@ export function useSessions(): UseSessionsReturn {
           if (!res.ok) throw new Error(`HTTP ${res.status}`)
           data = await res.json()
         }
+        if (cancelled) return
         setSessions(data.sessions)
         setTotalCount(data.totalCount)
         setProjects(data.projects)
         setHomedir(data.homedir)
       } catch (err) {
-        setError(err instanceof Error ? err.message : '加载失败')
+        if (!cancelled) setError(err instanceof Error ? err.message : '加载失败')
       } finally {
-        setLoading(false)
+        if (!cancelled) setLoading(false)
       }
     }
     fetch_()
+
+    // 每 5 秒自动轮询一次，捕获新创建的 session（不触发 loading）
+    const timer = setInterval(fetch_, 5000)
+    return () => { cancelled = true; clearInterval(timer) }
   }, [refreshKey])
 
   return { sessions, totalCount, projects, homedir, loading, error, refresh }
