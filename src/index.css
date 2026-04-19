@@ -5,8 +5,8 @@
  * Near-black canvas, semi-transparent white borders, luminance-based depth
  * Claude brand orange as the only chromatic accent
  */
-:root {
-  /* Backgrounds — luminance stacking (darker = deeper) */
+/* ========== Dark Theme (default) ========== */
+:root, [data-theme="dark"] {
   --bg-primary: #08090a;
   --bg-secondary: #0f1011;
   --bg-tertiary: #191a1b;
@@ -15,43 +15,80 @@
   --bg-active: rgba(218,119,86,0.06);
   --bg-input: rgba(255,255,255,0.02);
 
-  /* Borders — semi-transparent white, never solid dark */
   --border: rgba(255,255,255,0.06);
   --border-standard: rgba(255,255,255,0.08);
   --border-active: rgba(218,119,86,0.5);
   --line-subtle: #141516;
 
-  /* Text — cool gray hierarchy */
   --text-primary: #f7f8f8;
   --text-secondary: #d0d6e0;
   --text-tertiary: #8a8f98;
   --text-muted: #62666d;
 
-  /* Accent — Claude brand orange (only chromatic color) */
   --accent: #DA7756;
   --accent-hover: #e8956e;
   --accent-dim: rgba(218,119,86,0.10);
   --accent-border: rgba(218,119,86,0.25);
 
-  /* Status */
   --success: #27a644;
   --success-dim: rgba(39,166,68,0.12);
   --info: #7170ff;
   --info-dim: rgba(113,112,255,0.08);
 
-  /* Radii */
   --radius-micro: 4px;
   --radius-sm: 6px;
   --radius-md: 8px;
   --radius-lg: 12px;
   --radius-pill: 9999px;
 
-  /* Shadows — dark-on-dark elevation via layered shadows + border glow */
   --shadow-ring: rgba(0,0,0,0.2) 0px 0px 0px 1px;
   --shadow-sm: rgba(0,0,0,0.03) 0px 1.2px 0px 0px;
   --shadow-md: rgba(0,0,0,0.4) 0px 2px 4px;
   --shadow-search: rgba(0,0,0,0.2) 0px 0px 0px 1px;
   --shadow-search-focus: 0 0 0 1px var(--accent-border), 0 0 12px rgba(218,119,86,0.06);
+
+  --terminal-bg: #0a0e14;
+  --terminal-fg: #e2e8f0;
+}
+
+/* ========== Light Theme ========== */
+[data-theme="light"] {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f7f8f8;
+  --bg-tertiary: #f0f1f3;
+  --bg-card: rgba(0,0,0,0.02);
+  --bg-card-hover: rgba(0,0,0,0.04);
+  --bg-active: rgba(218,119,86,0.06);
+  --bg-input: #ffffff;
+
+  --border: rgba(0,0,0,0.08);
+  --border-standard: rgba(0,0,0,0.12);
+  --border-active: rgba(218,119,86,0.5);
+  --line-subtle: #e8e9eb;
+
+  --text-primary: #1a1a1a;
+  --text-secondary: #4a4f57;
+  --text-tertiary: #8a8f98;
+  --text-muted: #b0b5bd;
+
+  --accent: #c4603e;
+  --accent-hover: #b5522f;
+  --accent-dim: rgba(196,96,62,0.08);
+  --accent-border: rgba(196,96,62,0.25);
+
+  --success: #1a8a36;
+  --success-dim: rgba(26,138,54,0.08);
+  --info: #5856d6;
+  --info-dim: rgba(88,86,214,0.06);
+
+  --shadow-ring: rgba(0,0,0,0.06) 0px 0px 0px 1px;
+  --shadow-sm: rgba(0,0,0,0.04) 0px 1px 2px;
+  --shadow-md: rgba(0,0,0,0.08) 0px 2px 8px;
+  --shadow-search: rgba(0,0,0,0.06) 0px 0px 0px 1px, rgba(0,0,0,0.04) 0px 1px 3px;
+  --shadow-search-focus: 0 0 0 1px var(--accent-border), 0 0 8px rgba(196,96,62,0.08);
+
+  --terminal-bg: #1e1e1e;
+  --terminal-fg: #d4d4d4;
 }
 
 /* Global */
