@@ -134,43 +134,30 @@ export default function App() {
     >
       {/* ========== 左侧面板：Session 列表 ========== */}
       <div
-        className="flex flex-col shrink-0 border-r"
+        className="flex flex-col shrink-0"
         style={{
-          width: '420px',
-          borderColor: 'var(--border)',
-          backgroundColor: 'var(--bg-primary)',
+          width: '400px',
+          borderRight: '1px solid var(--border)',
+          backgroundColor: 'var(--bg-secondary)',
         }}
       >
-        {/* 标题栏拖拽区域（macOS hiddenInset 标题栏） */}
-        <div
-          className="shrink-0"
-          style={{
-            height: '38px',
-            WebkitAppRegion: 'drag' as any,
-          }}
-        />
+        {/* macOS 标题栏拖拽区域 */}
+        <div className="shrink-0" style={{ height: '38px', WebkitAppRegion: 'drag' } as React.CSSProperties} />
 
-        {/* 标题 */}
-        <div className="px-5 pb-3">
+        {/* 标题 + 搜索 */}
+        <div className="px-4 pb-3">
           <div className="flex items-center justify-between mb-3">
-            <h1 className="text-lg font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
+            <h1 className="text-[15px] tracking-[-0.3px]" style={{ color: 'var(--text-primary)', fontWeight: 590 }}>
               <span style={{ color: 'var(--accent)' }}>Claude</span>
-              <span className="font-normal ml-1.5" style={{ color: 'var(--text-secondary)' }}>Sessions</span>
+              <span style={{ color: 'var(--text-tertiary)', fontWeight: 400, marginLeft: '5px' }}>Sessions</span>
             </h1>
             {!loading && !error && (
-              <span
-                className="text-xs px-2.5 py-1 rounded-full font-medium"
-                style={{
-                  backgroundColor: 'var(--accent-dim)',
-                  color: 'var(--accent)',
-                }}
-              >
+              <span className="pill text-[10px]" style={{ color: 'var(--text-muted)' }}>
                 {totalCount}
               </span>
             )}
           </div>
 
-          {/* 搜索框 */}
           {!loading && !error && (
             <SearchBar
               query={query}
@@ -182,10 +169,10 @@ export default function App() {
           )}
         </div>
 
-        {/* 过滤/排序栏 + 布局控制 */}
+        {/* 过滤栏 */}
         {!loading && !error && (
           <div
-            className="flex items-center justify-between shrink-0"
+            className="flex items-center justify-between shrink-0 px-1"
             style={{ borderBottom: '1px solid var(--border)', borderTop: '1px solid var(--border)' }}
           >
             <FilterBar

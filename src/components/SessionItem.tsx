@@ -1,4 +1,4 @@
-// 单个 Session 卡片组件 — 通过 IPC 进行操作
+// Session 卡片 — Linear 风格：半透明背景、亮度层级、克制动效
 import type { Session, SearchMatch } from '../types/session'
 import { formatRelativeTime } from '../utils/time'
 import { getProjectColor } from '../utils/color'
@@ -18,38 +18,24 @@ interface SessionItemProps {
   onNameChanged?: () => void
 }
 
-function truncateText(text: string, maxLength: number): string {
+function truncate(text: string, max: number): string {
   if (!text) return ''
-  if (text.length <= maxLength) return text
-  return text.slice(0, maxLength) + '...'
+  return text.length <= max ? text : text.slice(0, max) + '...'
 }
 
-function shortenPath(fullPath: string, homedir: string): string {
-  if (!fullPath || fullPath === '/') return '/'
-  if (homedir && fullPath.startsWith(homedir)) {
-    return '~' + fullPath.slice(homedir.length)
-  }
-  return fullPath
+function shortenPath(p: string, home: string): string {
+  if (!p || p === '/') return '/'
+  return home && p.startsWith(home) ? '~' + p.slice(home.length) : p
 }
 
-function highlightText(text: string, query: string): React.ReactElement {
+function highlight(text: string, query: string): React.ReactElement {
   if (!query.trim()) return <>{text}</>
-  const lowerText = text.toLowerCase()
-  const lowerQuery = query.toLowerCase()
-  const idx = lowerText.indexOf(lowerQuery)
+  const idx = text.toLowerCase().indexOf(query.toLowerCase())
   if (idx === -1) return <>{text}</>
   return (
     <>
       {text.slice(0, idx)}
-      <mark style={{
-        backgroundColor: 'var(--accent-dim)',
-        color: 'var(--accent)',
-        borderRadius: '2px',
-        padding: '1px 2px',
-        fontWeight: 600,
-      }}>
-        {text.slice(idx, idx + query.length)}
-      </mark>
+      <span style={{ color: 'var(--accent)', fontWeight: 590 }}>{text.slice(idx, idx + query.length)}</span>
       {text.slice(idx + query.length)}
     </>
   )
@@ -60,232 +46,184 @@ export function SessionItem({
   triggerResume = false, onTriggerResumeHandled,
   searchMatches, searchQuery, onNameChanged,
 }: SessionItemProps) {
-  const projectColor = getProjectColor(session.projectName)
-  const relativeTime = formatRelativeTime(session.modified)
-  const itemRef = useRef<HTMLDivElement>(null)
+  const color = getProjectColor(session.projectName)
+  const time = formatRelativeTime(session.modified)
+  const ref = useRef<HTMLDivElement>(null)
+  const nameRef = useRef<HTMLInputElement>(null)
 
-  const [resumeStatus, setResumeStatus] = useState<ResumeStatus>('idle')
-  const [errorMsg, setErrorMsg] = useState('')
-  const [isRenaming, setIsRenaming] = useState(false)
-  const [nameInput, setNameInput] = useState(session.customName || '')
-  const nameInputRef = useRef<HTMLInputElement>(null)
+  const [status, setStatus] = useState<ResumeStatus>('idle')
+  const [error, setError] = useState('')
+  const [renaming, setRenaming] = useState(false)
+  const [nameVal, setNameVal] = useState(session.customName || '')
 
   useEffect(() => {
-    if (isSelected && itemRef.current) {
-      itemRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
-    }
+    if (isSelected && ref.current) ref.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
   }, [isSelected])
 
   useEffect(() => {
-    if (isRenaming && nameInputRef.current) {
-      nameInputRef.current.focus()
-      nameInputRef.current.select()
-    }
-  }, [isRenaming])
+    if (renaming && nameRef.current) { nameRef.current.focus(); nameRef.current.select() }
+  }, [renaming])
 
-  // 通过 IPC 设置名称
-  const submitRename = async () => {
-    setIsRenaming(false)
-    const newName = nameInput.trim()
-    if (newName === (session.customName || '')) return
+  const submitName = async () => {
+    setRenaming(false)
+    const n = nameVal.trim()
+    if (n === (session.customName || '')) return
     try {
-      await window.electronAPI.sessions.setName(session.sessionId, newName)
+      await window.electronAPI.sessions.setName(session.sessionId, n)
       onNameChanged?.()
     } catch {}
   }
 
-  const doResume = async () => {
-    if (resumeStatus === 'loading' || !onResume) return
-    setResumeStatus('loading')
-    setErrorMsg('')
+  const resume = () => {
+    if (status === 'loading' || !onResume) return
+    setStatus('loading'); setError('')
     try {
       onResume(session)
-      setResumeStatus('success')
-      setTimeout(() => setResumeStatus('idle'), 2000)
-    } catch (err) {
-      const message = err instanceof Error ? err.message : '未知错误'
-      setErrorMsg(message)
-      setResumeStatus('error')
-      setTimeout(() => { setResumeStatus('idle'); setErrorMsg('') }, 5000)
+      setStatus('success')
+      setTimeout(() => setStatus('idle'), 2000)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '未知错误')
+      setStatus('error')
+      setTimeout(() => { setStatus('idle'); setError('') }, 5000)
     }
   }
 
   useEffect(() => {
-    if (triggerResume) {
-      onTriggerResumeHandled?.()
-      doResume()
-    }
+    if (triggerResume) { onTriggerResumeHandled?.(); resume() }
   }, [triggerResume])
 
   return (
     <div
-      ref={itemRef}
-      className={`session-card group rounded-lg mx-3 mb-2 overflow-hidden cursor-pointer ${isSelected ? 'selected' : ''}`}
-      style={{ backgroundColor: isSelected ? 'var(--bg-active)' : 'var(--bg-card)' }}
+      ref={ref}
+      className={`session-card group mx-2.5 mb-1.5 cursor-pointer ${isSelected ? 'selected' : ''}`}
     >
       <div className="flex items-stretch">
-        {/* 左侧项目颜色条 */}
-        <div
-          className="w-1 shrink-0 rounded-l-lg"
-          style={{
-            backgroundColor: projectColor,
-            opacity: isSelected ? 1 : 0.6,
-          }}
-        />
+        {/* 项目色条 */}
+        <div className="w-[3px] shrink-0 rounded-l-lg" style={{ backgroundColor: color, opacity: isSelected ? 1 : 0.5 }} />
 
-        <div className="flex-1 min-w-0 p-4">
-          {/* 顶部：名称/命名 + 时间 + Resume */}
-          <div className="flex items-center justify-between gap-3 mb-1.5">
-            <div className="flex items-center gap-2 min-w-0 flex-1">
-              {isRenaming ? (
+        <div className="flex-1 min-w-0 px-3.5 py-3">
+          {/* 行1：名称 + 时间 + Resume */}
+          <div className="flex items-center justify-between gap-2 mb-1">
+            <div className="flex items-center gap-1.5 min-w-0 flex-1">
+              {renaming ? (
                 <input
-                  ref={nameInputRef}
-                  type="text"
-                  value={nameInput}
-                  onChange={(e) => setNameInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') { e.preventDefault(); submitRename() }
-                    if (e.key === 'Escape') { e.preventDefault(); setIsRenaming(false); setNameInput(session.customName || '') }
+                  ref={nameRef}
+                  value={nameVal}
+                  onChange={e => setNameVal(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') { e.preventDefault(); submitName() }
+                    if (e.key === 'Escape') { e.preventDefault(); setRenaming(false); setNameVal(session.customName || '') }
                     e.stopPropagation()
                   }}
-                  onBlur={submitRename}
-                  placeholder="输入 session 名称..."
-                  className="flex-1 h-7 px-2.5 text-sm rounded-md outline-none"
-                  style={{
-                    backgroundColor: 'var(--bg-tertiary)',
-                    color: 'var(--accent)',
-                    border: '1px solid var(--accent)',
-                    fontWeight: 600,
-                    maxWidth: '400px',
-                  }}
+                  onBlur={submitName}
+                  placeholder="Session 名称..."
+                  className="flex-1 h-6 px-2 text-[13px] rounded-[5px] outline-none max-w-[320px]"
+                  style={{ background: 'rgba(255,255,255,0.04)', color: 'var(--accent)', border: '1px solid var(--accent-border)', fontWeight: 590 }}
                 />
               ) : session.customName ? (
                 <>
                   <span
-                    className="text-sm font-bold truncate cursor-text"
-                    style={{ color: 'var(--accent)' }}
-                    title="双击重命名"
-                    onDoubleClick={(e) => { e.stopPropagation(); setIsRenaming(true) }}
+                    className="text-[13px] font-[590] truncate cursor-text"
+                    style={{ color: 'var(--accent)', letterSpacing: '-0.01em' }}
+                    onDoubleClick={e => { e.stopPropagation(); setRenaming(true) }}
                   >
-                    {searchQuery ? highlightText(session.customName, searchQuery) : session.customName}
+                    {searchQuery ? highlight(session.customName, searchQuery) : session.customName}
                   </span>
                   <button
-                    className="name-btn shrink-0 w-5 h-5 flex items-center justify-center rounded cursor-pointer hover:bg-[var(--bg-tertiary)]"
-                    onClick={(e) => { e.stopPropagation(); setIsRenaming(true) }}
-                    title="重命名"
+                    className="name-btn shrink-0 w-[18px] h-[18px] flex items-center justify-center rounded-[4px] cursor-pointer"
+                    style={{ background: 'rgba(255,255,255,0.03)' }}
+                    onClick={e => { e.stopPropagation(); setRenaming(true) }}
                   >
-                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="var(--text-muted)" strokeWidth="1.5" strokeLinecap="round">
+                    <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="var(--text-muted)" strokeWidth="1.5" strokeLinecap="round">
                       <path d="M11.5 1.5l3 3-9 9H2.5v-3l9-9z" />
                     </svg>
                   </button>
                 </>
               ) : (
                 <button
-                  className="name-btn shrink-0 flex items-center gap-1 px-2 py-0.5 rounded-md text-xs cursor-pointer hover:bg-[var(--bg-tertiary)]"
-                  style={{ color: 'var(--text-muted)', border: '1px dashed var(--border)' }}
-                  onClick={(e) => { e.stopPropagation(); setNameInput(''); setIsRenaming(true) }}
+                  className="name-btn shrink-0 flex items-center gap-1 px-1.5 py-px rounded-[4px] text-[10px] font-[510] cursor-pointer"
+                  style={{ color: 'var(--text-muted)', border: '1px dashed rgba(255,255,255,0.1)' }}
+                  onClick={e => { e.stopPropagation(); setNameVal(''); setRenaming(true) }}
                 >
-                  <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                    <path d="M8 3v10M3 8h10" />
-                  </svg>
-                  命名
+                  + 命名
                 </button>
               )}
             </div>
 
-            <div className="flex items-center gap-2 shrink-0">
-              {/* Resume 按钮 */}
-              {resumeStatus === 'loading' ? (
-                <span className="tag" style={{ background: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}>
-                  正在打开...
-                </span>
-              ) : resumeStatus === 'success' ? (
-                <span className="tag" style={{ background: 'var(--success-dim)', color: 'var(--success)' }}>
-                  已打开
-                </span>
-              ) : resumeStatus === 'error' ? (
-                <span className="tag" style={{ background: 'var(--accent-dim)', color: 'var(--accent)' }} title={errorMsg}>
-                  {errorMsg || '打开失败'}
-                </span>
+            <div className="flex items-center gap-1.5 shrink-0">
+              {status === 'loading' ? (
+                <span className="tag" style={{ background: 'rgba(255,255,255,0.04)', color: 'var(--text-tertiary)' }}>打开中...</span>
+              ) : status === 'success' ? (
+                <span className="tag" style={{ background: 'var(--success-dim)', color: 'var(--success)' }}>已打开</span>
+              ) : status === 'error' ? (
+                <span className="tag" style={{ background: 'var(--accent-dim)', color: 'var(--accent)' }} title={error}>{error || '失败'}</span>
               ) : (
                 <button
-                  onClick={(e) => { e.stopPropagation(); doResume() }}
+                  onClick={e => { e.stopPropagation(); resume() }}
                   className="resume-btn tag cursor-pointer"
-                  style={{ background: 'var(--accent)', color: '#fff', fontWeight: 600 }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--accent-hover)' }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--accent)' }}
+                  style={{ background: 'var(--accent)', color: '#fff', fontWeight: 590 }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'var(--accent-hover)' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'var(--accent)' }}
                 >
                   Resume
                 </button>
               )}
-
-              <span className="text-xs whitespace-nowrap" style={{ color: 'var(--text-muted)' }}>
-                {relativeTime}
+              <span className="text-[11px] font-[510] tabular-nums" style={{ color: 'var(--text-muted)', fontFamily: "'SF Mono', monospace" }}>
+                {time}
               </span>
             </div>
           </div>
 
-          {/* firstPrompt */}
+          {/* 行2：firstPrompt */}
           <p
-            className={`text-sm leading-relaxed ${session.customName ? 'mt-0.5' : ''}`}
+            className="text-[13px] leading-[1.5] truncate"
             style={{
-              color: session.customName ? 'var(--text-secondary)' : 'var(--text-primary)',
-              fontWeight: session.customName ? 400 : 500,
+              color: session.customName ? 'var(--text-tertiary)' : 'var(--text-secondary)',
+              fontWeight: session.customName ? 400 : 510,
+              letterSpacing: '-0.01em',
             }}
             title={session.firstPrompt}
           >
-            {searchQuery
-              ? highlightText(truncateText(session.firstPrompt, 100), searchQuery)
-              : truncateText(session.firstPrompt, 100)
-            }
+            {searchQuery ? highlight(truncate(session.firstPrompt, 90), searchQuery) : truncate(session.firstPrompt, 90)}
           </p>
 
           {/* summary */}
           {session.summary && (
-            <p className="text-xs mt-1 leading-relaxed" style={{ color: 'var(--text-muted)' }} title={session.summary}>
-              {searchQuery
-                ? highlightText(truncateText(session.summary, 120), searchQuery)
-                : truncateText(session.summary, 120)
-              }
+            <p className="text-[12px] mt-0.5 truncate" style={{ color: 'var(--text-muted)', letterSpacing: '-0.01em' }}>
+              {searchQuery ? highlight(truncate(session.summary, 100), searchQuery) : truncate(session.summary, 100)}
             </p>
           )}
 
-          {/* 全文搜索匹配片段 */}
+          {/* 全文搜索匹配 */}
           {searchMatches && searchMatches.length > 0 && (
-            <div className="mt-2 space-y-1">
-              {searchMatches.map((match, i) => (
-                <div
-                  key={i}
-                  className="flex items-start gap-1.5 text-xs rounded-md px-2 py-1"
-                  style={{ backgroundColor: 'var(--accent-dim)', color: 'var(--text-secondary)' }}
-                >
-                  <span style={{ color: 'var(--accent)', fontSize: '10px', marginTop: '2px', flexShrink: 0 }}>●</span>
-                  <span className="truncate" title={match.text}>
-                    {searchQuery ? highlightText(match.highlight, searchQuery) : match.highlight}
-                  </span>
+            <div className="mt-1.5 space-y-0.5">
+              {searchMatches.map((m, i) => (
+                <div key={i} className="flex items-start gap-1.5 text-[11px] rounded-[4px] px-2 py-1"
+                  style={{ background: 'var(--accent-dim)', color: 'var(--text-tertiary)' }}>
+                  <span style={{ color: 'var(--accent)', fontSize: '8px', marginTop: '3px', flexShrink: 0 }}>●</span>
+                  <span className="truncate">{searchQuery ? highlight(m.highlight, searchQuery) : m.highlight}</span>
                 </div>
               ))}
             </div>
           )}
 
-          {/* 元信息标签 */}
-          <div className="flex items-center gap-1.5 mt-2.5 flex-wrap">
-            <span className="tag" style={{ backgroundColor: projectColor + '18', color: projectColor }}>
+          {/* 元信息 */}
+          <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+            <span className="tag" style={{ background: color + '14', color }}>
               {session.projectName}
             </span>
-            <span className="text-xs font-mono" style={{
+            <span className="text-[10px] font-[510]" style={{
               color: 'var(--text-muted)',
-              fontFamily: "'JetBrains Mono', 'SF Mono', monospace",
-              fontSize: '11px',
+              fontFamily: "'SF Mono', 'JetBrains Mono', monospace",
             }}>
               {shortenPath(session.projectPath, homedir)}
             </span>
             {session.gitBranch && (
-              <span className="tag" style={{ backgroundColor: 'var(--info-dim)', color: 'var(--info)' }}>
+              <span className="tag" style={{ background: 'var(--info-dim)', color: 'var(--info)' }}>
                 {session.gitBranch}
               </span>
             )}
-            <span className="tag" style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-muted)' }}>
+            <span className="text-[10px] font-[510] tabular-nums" style={{ color: 'var(--text-muted)' }}>
               {session.messageCount} msgs
             </span>
           </div>

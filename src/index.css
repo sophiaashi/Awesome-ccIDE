@@ -1,42 +1,60 @@
 @import "tailwindcss";
 
-/* 设计系统 CSS 变量 — Terminal-native dark theme */
+/*
+ * Design system inspired by Linear's dark-mode-native aesthetic
+ * Near-black canvas, semi-transparent white borders, luminance-based depth
+ * Claude brand orange as the only chromatic accent
+ */
 :root {
-  --bg-primary: #0a0e14;
-  --bg-secondary: #131920;
-  --bg-tertiary: #1a2029;
-  --bg-card: #141a22;
-  --bg-card-hover: #1a222d;
-  --bg-active: rgba(218, 119, 86, 0.08);
-  --border: #1e2630;
-  --border-subtle: #1a2029;
-  --border-active: #DA7756;
+  /* Backgrounds — luminance stacking (darker = deeper) */
+  --bg-primary: #08090a;
+  --bg-secondary: #0f1011;
+  --bg-tertiary: #191a1b;
+  --bg-card: rgba(255,255,255,0.02);
+  --bg-card-hover: rgba(255,255,255,0.04);
+  --bg-active: rgba(218,119,86,0.06);
+  --bg-input: rgba(255,255,255,0.02);
 
-  --text-primary: #e2e8f0;
-  --text-secondary: #7a8594;
-  --text-muted: #3d4754;
-  --text-link: #58A6FF;
+  /* Borders — semi-transparent white, never solid dark */
+  --border: rgba(255,255,255,0.06);
+  --border-standard: rgba(255,255,255,0.08);
+  --border-active: rgba(218,119,86,0.5);
+  --line-subtle: #141516;
 
+  /* Text — cool gray hierarchy */
+  --text-primary: #f7f8f8;
+  --text-secondary: #d0d6e0;
+  --text-tertiary: #8a8f98;
+  --text-muted: #62666d;
+
+  /* Accent — Claude brand orange (only chromatic color) */
   --accent: #DA7756;
   --accent-hover: #e8956e;
-  --accent-dim: rgba(218, 119, 86, 0.12);
-  --success: #3FB950;
-  --success-dim: rgba(63, 185, 80, 0.12);
-  --warning: #D29922;
-  --info: #58A6FF;
-  --info-dim: rgba(88, 166, 255, 0.1);
+  --accent-dim: rgba(218,119,86,0.10);
+  --accent-border: rgba(218,119,86,0.25);
 
+  /* Status */
+  --success: #27a644;
+  --success-dim: rgba(39,166,68,0.12);
+  --info: #7170ff;
+  --info-dim: rgba(113,112,255,0.08);
+
+  /* Radii */
+  --radius-micro: 4px;
   --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-pill: 9999px;
 
-  --shadow-card: 0 1px 3px rgba(0,0,0,0.3), 0 0 0 1px var(--border);
-  --shadow-card-hover: 0 4px 12px rgba(0,0,0,0.4), 0 0 0 1px var(--border);
-  --shadow-search: 0 2px 8px rgba(0,0,0,0.3), inset 0 0 0 1px var(--border);
-  --shadow-search-focus: 0 2px 12px rgba(218, 119, 86, 0.15), inset 0 0 0 1px var(--accent);
+  /* Shadows — dark-on-dark elevation via layered shadows + border glow */
+  --shadow-ring: rgba(0,0,0,0.2) 0px 0px 0px 1px;
+  --shadow-sm: rgba(0,0,0,0.03) 0px 1.2px 0px 0px;
+  --shadow-md: rgba(0,0,0,0.4) 0px 2px 4px;
+  --shadow-search: rgba(0,0,0,0.2) 0px 0px 0px 1px;
+  --shadow-search-focus: 0 0 0 1px var(--accent-border), 0 0 12px rgba(218,119,86,0.06);
 }
 
-/* 全局样式 */
+/* Global */
 * {
   margin: 0;
   padding: 0;
@@ -44,7 +62,8 @@
 }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-feature-settings: "cv01", "ss03";
   font-size: 14px;
   color: var(--text-primary);
   background-color: var(--bg-primary);
@@ -54,108 +73,144 @@ body {
   height: 100vh;
 }
 
-/* Electron 原生标题栏拖拽区域 */
 #root {
   height: 100vh;
   overflow: hidden;
 }
 
-/* 滚动条 */
+/* Scrollbar — minimal, near-invisible */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 5px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--border);
+  background: rgba(255,255,255,0.08);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--text-muted);
+  background: rgba(255,255,255,0.14);
 }
 
-/* 搜索框动画 */
+/* Search — semi-transparent card with border */
 .search-box {
-  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  transition: box-shadow 0.2s ease;
   box-shadow: var(--shadow-search);
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
 }
 .search-box:focus-within {
   box-shadow: var(--shadow-search-focus);
+  border-color: var(--accent-border);
+  background: rgba(255,255,255,0.03);
 }
 
-/* Session 卡片动画 */
+/* Session cards — luminance-based depth, no float */
 .session-card {
-  transition: all 0.15s ease;
+  transition: background 0.12s ease, border-color 0.12s ease;
+  background: var(--bg-card);
   border: 1px solid transparent;
+  border-radius: var(--radius-md);
 }
 .session-card:hover {
   background: var(--bg-card-hover);
   border-color: var(--border);
-  box-shadow: var(--shadow-card-hover);
-  transform: translateY(-1px);
 }
 .session-card.selected {
   background: var(--bg-active);
-  border-color: var(--accent);
-  box-shadow: 0 0 0 1px var(--accent), 0 2px 8px rgba(218, 119, 86, 0.1);
+  border-color: var(--accent-border);
 }
 
-/* 命名按钮 */
+/* Hover-reveal elements */
 .name-btn {
   opacity: 0;
-  transition: opacity 0.15s ease;
+  transition: opacity 0.12s ease;
 }
 .session-card:hover .name-btn {
   opacity: 1;
 }
 
-/* Resume 按钮 */
 .resume-btn {
   opacity: 0;
-  transform: translateX(4px);
-  transition: all 0.15s ease;
+  transition: opacity 0.12s ease, transform 0.12s ease;
+  transform: translateX(3px);
 }
 .session-card:hover .resume-btn {
   opacity: 1;
   transform: translateX(0);
 }
 
-/* 布局按钮 */
+/* Tags / pills */
+.tag {
+  font-size: 11px;
+  padding: 1px 7px;
+  border-radius: var(--radius-micro);
+  font-weight: 510;
+  letter-spacing: -0.01em;
+  line-height: 1.5;
+}
+
+.pill {
+  font-size: 11px;
+  padding: 1px 8px;
+  border-radius: var(--radius-pill);
+  font-weight: 510;
+  border: 1px solid var(--border);
+}
+
+/* Layout buttons */
 .layout-btn {
-  transition: all 0.15s ease;
+  transition: background 0.12s ease;
+  border-radius: var(--radius-sm);
 }
 .layout-btn:hover {
-  background: var(--bg-tertiary);
+  background: rgba(255,255,255,0.04);
 }
 .layout-btn.active {
   background: var(--accent);
   color: white;
 }
 
-/* 标签样式 */
-.tag {
-  font-size: 11px;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-weight: 500;
-  letter-spacing: 0.01em;
-}
-
-/* 过渡动画 */
+/* Animations */
 .fade-in {
-  animation: fadeIn 0.2s ease;
+  animation: fadeIn 0.15s ease;
 }
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
+  from { opacity: 0; transform: translateY(2px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* 加载动画 */
 @keyframes pulse {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 1; }
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.8; }
 }
 .loading-pulse {
-  animation: pulse 1.5s ease-in-out infinite;
+  animation: pulse 1.8s ease-in-out infinite;
+}
+
+/* Select / dropdown styling */
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238a8f98' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 6px center;
+  background-size: 14px;
+  padding-right: 24px;
+}
+
+/* Terminal pane focus ring */
+.terminal-pane {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  transition: border-color 0.12s ease;
+}
+.terminal-pane.active {
+  border-color: var(--accent-border);
+}
+.terminal-pane .terminal-header {
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
 }

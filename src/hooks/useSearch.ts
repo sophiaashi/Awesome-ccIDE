@@ -54,9 +54,17 @@ export function useSearch(sessions: Session[]): UseSearchReturn {
 
     setIsSearching(true)
 
+    const isElectron = typeof window !== 'undefined' && !!window.electronAPI
+
     debounceRef.current = setTimeout(async () => {
       try {
-        const data = await window.electronAPI.sessions.search(trimmed)
+        let data: { results: Record<string, SearchMatch[]> }
+        if (isElectron) {
+          data = await window.electronAPI.sessions.search(trimmed)
+        } else {
+          const res = await fetch(`/api/search?q=${encodeURIComponent(trimmed)}`)
+          data = res.ok ? await res.json() : { results: {} }
+        }
         setSearchMatches(data.results || {})
       } catch {
         // 搜索失败不影响本地搜索
