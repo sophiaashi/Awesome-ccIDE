@@ -1,6 +1,6 @@
 <div align="center">
 
-# ccIDE
+# Awesome-ccIDE
 
 **The missing IDE for your Claude Code sessions.**
 
