@@ -50,7 +50,13 @@ export default function App() {
    * Resume 一个 session — 通过 IPC 创建新的 pty 终端
    */
   const handleResume = useCallback((session: Session) => {
-    // 异步创建终端，不阻塞 UI
+    // 先检查 session 是否已经打开过 — 若已打开则直接激活，不创建新终端
+    const existing = openTerminals.find(t => t.sessionId === session.sessionId)
+    if (existing) {
+      setActiveTerminalId(existing.terminalId)
+      return
+    }
+
     ;(async () => {
       try {
         const { terminalId } = await window.electronAPI.terminal.create(
@@ -73,7 +79,7 @@ export default function App() {
         console.error('创建终端失败:', err)
       }
     })()
-  }, [])
+  }, [openTerminals])
 
   /**
    * 新建 session — 在 home 目录打开一个新终端运行 claude（不 resume）
