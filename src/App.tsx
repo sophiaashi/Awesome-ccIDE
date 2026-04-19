@@ -8,6 +8,7 @@ import { SessionList } from './components/SessionList'
 import { SearchBar } from './components/SearchBar'
 import { FilterBar } from './components/FilterBar'
 import { LayoutBar } from './components/LayoutBar'
+import { TabBar } from './components/TabBar'
 // Sidebar 已移除 — 左侧列表直接显示已打开状态
 import { TerminalPanel } from './components/TerminalPanel'
 import { initProjectColors } from './utils/color'
@@ -400,7 +401,6 @@ export default function App() {
           style={{
             height: '38px',
             borderBottom: '1px solid var(--border)',
-            // 收起侧边栏时给 macOS 红绿灯让出空间
             paddingLeft: leftPanelCollapsed ? '80px' : '16px',
           }}
         >
@@ -410,7 +410,15 @@ export default function App() {
           />
         </div>
 
-        {/* 终端面板 + 侧边栏 */}
+        {/* Chrome 风格 Tab 栏 */}
+        <TabBar
+          terminals={openTerminals}
+          activeTerminalId={activeTerminalId}
+          onActivate={handleActivateTerminal}
+          onClose={handleCloseTerminal}
+        />
+
+        {/* 终端面板 */}
         <div className="flex-1 flex min-w-0 overflow-hidden">
           <TerminalPanel
             terminals={openTerminals}
@@ -419,8 +427,6 @@ export default function App() {
             onCloseTerminal={handleCloseTerminal}
             onActivateTerminal={handleActivateTerminal}
           />
-
-          {/* 右侧 Sidebar 已移除，改为左侧列表中显示选中态 */}
         </div>
       </div>
     </div>

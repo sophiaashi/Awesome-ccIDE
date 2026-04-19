@@ -96,6 +96,7 @@ export function SessionItem({
   return (
     <div
       ref={ref}
+      onClick={() => { if (!renaming) doResume() }}
       className={`session-card group ml-5 mr-4 mb-1.5 cursor-pointer ${isSelected ? 'selected' : ''} ${isActive ? 'is-active' : isOpen ? 'is-open' : ''}`}
     >
       <div className="flex flex-col">
