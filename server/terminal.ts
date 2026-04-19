@@ -75,11 +75,13 @@ export async function resumeSession(sessionId: string, projectPath: string): Pro
     ].join('\n')
     await runAppleScript(script)
   } else {
-    // Terminal.app AppleScript
+    // Terminal.app AppleScript — 创建新窗口并设置标题以便识别
+    const shortId = sessionId.slice(0, 8)
     const script = [
       'tell application "Terminal"',
+      // do script 不带 "in window" 参数时创建新窗口
+      `  set newTab to do script "${escapedCommand}"`,
       '  activate',
-      `  do script "${escapedCommand}"`,
       'end tell',
     ].join('\n')
     await runAppleScript(script)
