@@ -50,7 +50,21 @@
     "mac": {
       "category": "public.app-category.developer-tools",
       "target": "dmg",
-      "icon": "public/icon.icns"
+      "icon": "public/icon.icns",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "extendInfo": {
+        "NSAppleMusicUsageDescription": "",
+        "NSPhotoLibraryUsageDescription": "",
+        "NSCameraUsageDescription": "",
+        "NSMicrophoneUsageDescription": "",
+        "NSLocationUsageDescription": "",
+        "NSContactsUsageDescription": "",
+        "NSCalendarsUsageDescription": "",
+        "NSRemindersUsageDescription": ""
+      }
     },
     "files": [
       "dist/**/*",

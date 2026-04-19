@@ -111,8 +111,8 @@ ipcMain.handle('terminal:create', async (_event, sessionId: string, projectPath:
   ]
   const fullPath = [...new Set([...userPaths, ...(process.env.PATH?.split(':') || [])])].join(':')
 
-  // 创建 pty 实例（login shell 以加载用户配置）
-  const ptyProcess = pty.spawn(shell, ['--login'], {
+  // 创建 pty 实例（interactive shell，不用 login 避免触发 .zprofile 权限检查）
+  const ptyProcess = pty.spawn(shell, ['-i'], {
     name: 'xterm-256color',
     cols: 80,
     rows: 24,
