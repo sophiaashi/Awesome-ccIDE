@@ -12,7 +12,7 @@ import { useEffect, useCallback, useState } from 'react'
 import type { Session } from './types/session'
 
 export default function App() {
-  const { sessions, totalCount, projects, homedir, loading, error } = useSessions()
+  const { sessions, totalCount, projects, homedir, loading, error, refresh } = useSessions()
 
   // 全屏模式状态
   const [isFullscreen, setIsFullscreen] = useState(false)
@@ -255,6 +255,7 @@ export default function App() {
           onKeyboardResumeHandled={() => setKeyboardResumeId(null)}
           searchMatches={searchMatches}
           searchQuery={query}
+          onNameChanged={refresh}
         />
       </main>
     </div>

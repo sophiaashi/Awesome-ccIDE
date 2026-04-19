@@ -21,6 +21,8 @@ interface SessionListProps {
   searchMatches?: Record<string, SearchMatch[]>
   /** 当前搜索关键词 */
   searchQuery?: string
+  /** 名称更新后的回调 */
+  onNameChanged?: () => void
 }
 
 export function SessionList({
@@ -35,6 +37,7 @@ export function SessionList({
   onKeyboardResumeHandled,
   searchMatches = {},
   searchQuery = '',
+  onNameChanged,
 }: SessionListProps) {
   // 加载中状态
   if (loading) {
@@ -106,6 +109,7 @@ export function SessionList({
             onTriggerResumeHandled={onKeyboardResumeHandled}
             searchMatches={searchMatches[session.sessionId]}
             searchQuery={searchQuery}
+            onNameChanged={onNameChanged}
           />
         ))}
       </div>

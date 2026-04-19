@@ -1,5 +1,5 @@
 // Session 数据读取模块
-import { readFileSync, existsSync } from 'fs'
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs'
 import { createReadStream } from 'fs'
 import { createInterface } from 'readline'
 import { glob } from 'glob'
@@ -26,6 +26,49 @@ interface SessionIndexFile {
   originalPath: string
 }
 
+// ========== Session 自定义名称管理 ==========
+
+const NAMES_FILE = path.join(os.homedir(), '.claude-session-manager', 'session-names.json')
+
+/** 读取所有自定义名称 */
+export function loadSessionNames(): Record<string, string> {
+  try {
+    if (existsSync(NAMES_FILE)) {
+      return JSON.parse(readFileSync(NAMES_FILE, 'utf-8'))
+    }
+  } catch {}
+  return {}
+}
+
+/** 保存自定义名称 */
+function saveSessionNames(names: Record<string, string>): void {
+  const dir = path.dirname(NAMES_FILE)
+  if (!existsSync(dir)) {
+    mkdirSync(dir, { recursive: true })
+  }
+  writeFileSync(NAMES_FILE, JSON.stringify(names, null, 2), 'utf-8')
+}
+
+/** 设置 session 名称 */
+export function setSessionName(sessionId: string, name: string): void {
+  const names = loadSessionNames()
+  if (name.trim()) {
+    names[sessionId] = name.trim()
+  } else {
+    delete names[sessionId]
+  }
+  saveSessionNames(names)
+}
+
+/** 删除 session 名称 */
+export function deleteSessionName(sessionId: string): void {
+  const names = loadSessionNames()
+  delete names[sessionId]
+  saveSessionNames(names)
+}
+
+// ========== Session 数据 ==========
+
 export interface SessionData {
   sessionId: string
   fullPath: string
@@ -39,6 +82,8 @@ export interface SessionData {
   projectPath: string
   projectName: string
   isSidechain: boolean
+  /** 用户自定义名称 */
+  customName?: string
 }
 
 /**
@@ -110,6 +155,14 @@ export async function loadAllSessions(): Promise<{
     }
   }
   const uniqueSessions = Array.from(sessionMap.values())
+
+  // 合并自定义名称
+  const customNames = loadSessionNames()
+  for (const session of uniqueSessions) {
+    if (customNames[session.sessionId]) {
+      session.customName = customNames[session.sessionId]
+    }
+  }
 
   // 按 modified 时间倒序排列（最新的在最上面）
   uniqueSessions.sort((a, b) => {

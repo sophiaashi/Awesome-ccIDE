@@ -18,6 +18,8 @@ export interface SessionEntry {
 /** API 返回的 session 数据（包含派生字段） */
 export interface Session extends SessionEntry {
   projectName: string
+  /** 用户自定义名称 */
+  customName?: string
 }
 
 /** GET /api/sessions 的响应 */

@@ -1,5 +1,5 @@
 // Session 数据获取 hook
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import type { Session, SessionsResponse } from '../types/session'
 
 interface UseSessionsReturn {
@@ -9,6 +9,8 @@ interface UseSessionsReturn {
   homedir: string
   loading: boolean
   error: string | null
+  /** 重新加载数据（用于名称更新后刷新） */
+  refresh: () => void
 }
 
 export function useSessions(): UseSessionsReturn {
@@ -18,11 +20,16 @@ export function useSessions(): UseSessionsReturn {
   const [homedir, setHomedir] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [refreshKey, setRefreshKey] = useState(0)
+
+  const refresh = useCallback(() => {
+    setRefreshKey(k => k + 1)
+  }, [])
 
   useEffect(() => {
     async function fetchSessions() {
       try {
-        setLoading(true)
+        if (refreshKey === 0) setLoading(true)
         const res = await fetch('/api/sessions')
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         const data: SessionsResponse = await res.json()
@@ -37,7 +44,7 @@ export function useSessions(): UseSessionsReturn {
       }
     }
     fetchSessions()
-  }, [])
+  }, [refreshKey])
 
-  return { sessions, totalCount, projects, homedir, loading, error }
+  return { sessions, totalCount, projects, homedir, loading, error, refresh }
 }

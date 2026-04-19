@@ -1,6 +1,6 @@
 // Express 服务入口
 import express from 'express'
-import { loadAllSessions, fullTextSearch } from './sessions.js'
+import { loadAllSessions, fullTextSearch, setSessionName, deleteSessionName } from './sessions.js'
 import { resumeSession } from './terminal.js'
 import { applyLayout, getTerminalStatus, focusWindow } from './layout.js'
 import type { LayoutType } from './layout.js'
@@ -18,6 +18,30 @@ app.get('/api/sessions', async (_req, res) => {
   } catch (err) {
     console.error('加载 session 数据失败:', err)
     res.status(500).json({ error: '无法加载 session 数据' })
+  }
+})
+
+// API：设置/更新 session 自定义名称
+app.put('/api/sessions/:sessionId/name', (req, res) => {
+  try {
+    const { sessionId } = req.params
+    const { name } = req.body
+
+    if (typeof name !== 'string') {
+      res.status(400).json({ error: '缺少 name 参数' })
+      return
+    }
+
+    if (name.trim()) {
+      setSessionName(sessionId, name)
+    } else {
+      deleteSessionName(sessionId)
+    }
+
+    res.json({ success: true, name: name.trim() || null })
+  } catch (err) {
+    console.error('设置名称失败:', err)
+    res.status(500).json({ error: '设置名称失败' })
   }
 })
 

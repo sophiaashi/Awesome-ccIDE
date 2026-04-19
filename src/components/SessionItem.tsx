@@ -23,6 +23,8 @@ interface SessionItemProps {
   searchMatches?: SearchMatch[]
   /** 当前搜索关键词（用于高亮） */
   searchQuery?: string
+  /** 名称更新后的回调（刷新数据） */
+  onNameChanged?: () => void
 }
 
 /**
@@ -68,7 +70,7 @@ function highlightText(text: string, query: string): React.ReactElement {
   )
 }
 
-export function SessionItem({ session, isSelected = false, homedir = '', onResume, triggerResume = false, onTriggerResumeHandled, searchMatches, searchQuery }: SessionItemProps) {
+export function SessionItem({ session, isSelected = false, homedir = '', onResume, triggerResume = false, onTriggerResumeHandled, searchMatches, searchQuery, onNameChanged }: SessionItemProps) {
   const projectColor = getProjectColor(session.projectName)
   const relativeTime = formatRelativeTime(session.modified)
   const itemRef = useRef<HTMLDivElement>(null)
@@ -76,6 +78,44 @@ export function SessionItem({ session, isSelected = false, homedir = '', onResum
   // Resume 按钮状态
   const [resumeStatus, setResumeStatus] = useState<ResumeStatus>('idle')
   const [errorMsg, setErrorMsg] = useState('')
+
+  // 重命名状态
+  const [isRenaming, setIsRenaming] = useState(false)
+  const [nameInput, setNameInput] = useState(session.customName || '')
+  const nameInputRef = useRef<HTMLInputElement>(null)
+
+  // 聚焦到重命名输入框
+  useEffect(() => {
+    if (isRenaming && nameInputRef.current) {
+      nameInputRef.current.focus()
+      nameInputRef.current.select()
+    }
+  }, [isRenaming])
+
+  // 提交重命名
+  const submitRename = async () => {
+    setIsRenaming(false)
+    const newName = nameInput.trim()
+    // 如果名称没变化，不提交
+    if (newName === (session.customName || '')) return
+
+    try {
+      const res = await fetch(`/api/sessions/${session.sessionId}/name`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newName }),
+      })
+      if (res.ok) {
+        onNameChanged?.()
+      }
+    } catch {}
+  }
+
+  // 取消重命名
+  const cancelRename = () => {
+    setIsRenaming(false)
+    setNameInput(session.customName || '')
+  }
 
   // 选中时自动滚动到可见区域
   useEffect(() => {
@@ -224,14 +264,76 @@ export function SessionItem({ session, isSelected = false, homedir = '', onResum
 
       {/* 主体内容 */}
       <div className="flex-1 min-w-0 py-3 px-4">
-        {/* 第一行：firstPrompt + Resume 按钮 + 时间 */}
+        {/* 自定义名称行（醒目显示）或重命名输入框 */}
+        {isRenaming ? (
+          <div className="flex items-center gap-2 mb-1">
+            <input
+              ref={nameInputRef}
+              type="text"
+              value={nameInput}
+              onChange={(e) => setNameInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') { e.preventDefault(); submitRename() }
+                if (e.key === 'Escape') { e.preventDefault(); cancelRename() }
+                e.stopPropagation()
+              }}
+              onBlur={submitRename}
+              placeholder="输入 session 名称..."
+              className="flex-1 h-7 px-2 text-sm rounded outline-none"
+              style={{
+                backgroundColor: 'var(--bg-tertiary)',
+                color: 'var(--accent)',
+                border: '1px solid var(--accent)',
+                fontWeight: 600,
+              }}
+            />
+          </div>
+        ) : session.customName ? (
+          <div className="flex items-center gap-2 mb-1">
+            <span
+              className="text-sm font-semibold truncate cursor-pointer"
+              style={{ color: 'var(--accent)' }}
+              title="双击重命名"
+              onDoubleClick={(e) => { e.stopPropagation(); setIsRenaming(true) }}
+            >
+              {searchQuery
+                ? highlightText(session.customName, searchQuery)
+                : session.customName
+              }
+            </span>
+            <button
+              className="opacity-0 group-hover:opacity-60 hover:!opacity-100 transition-opacity text-xs cursor-pointer"
+              style={{ color: 'var(--text-muted)', fontSize: '11px' }}
+              onClick={(e) => { e.stopPropagation(); setIsRenaming(true) }}
+              title="重命名"
+            >
+              ✏️
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 mb-0">
+            <button
+              className="opacity-0 group-hover:opacity-60 hover:!opacity-100 transition-opacity text-xs cursor-pointer"
+              style={{ color: 'var(--text-muted)', fontSize: '11px' }}
+              onClick={(e) => { e.stopPropagation(); setNameInput(''); setIsRenaming(true) }}
+              title="命名此 session"
+            >
+              + 命名
+            </button>
+          </div>
+        )}
+
+        {/* firstPrompt + Resume 按钮 + 时间 */}
         <div className="flex items-start justify-between gap-3">
           <p
-            className="text-sm font-medium truncate flex-1"
-            style={{ color: 'var(--text-primary)' }}
+            className={`text-sm truncate flex-1 ${session.customName ? '' : 'font-medium'}`}
+            style={{ color: session.customName ? 'var(--text-secondary)' : 'var(--text-primary)' }}
             title={session.firstPrompt}
           >
-            {truncateText(session.firstPrompt, 100)}
+            {searchQuery
+              ? highlightText(truncateText(session.firstPrompt, 100), searchQuery)
+              : truncateText(session.firstPrompt, 100)
+            }
           </p>
           <div className="flex items-center gap-2 shrink-0">
             {renderResumeButton()}

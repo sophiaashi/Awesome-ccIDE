@@ -87,12 +87,13 @@ export function useSearch(sessions: Session[]): UseSearchReturn {
     if (query.trim()) {
       const lowerQuery = query.trim().toLowerCase()
       result = result.filter(s => {
-        // 本地匹配 firstPrompt 和 summary
+        // 本地匹配 customName、firstPrompt 和 summary
+        const nameMatch = s.customName?.toLowerCase().includes(lowerQuery)
         const promptMatch = s.firstPrompt?.toLowerCase().includes(lowerQuery)
         const summaryMatch = s.summary?.toLowerCase().includes(lowerQuery)
         // 全文搜索匹配（来自后端 API）
         const fullTextMatch = s.sessionId in searchMatches
-        return promptMatch || summaryMatch || fullTextMatch
+        return nameMatch || promptMatch || summaryMatch || fullTextMatch
       })
     }
 
