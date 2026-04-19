@@ -24,8 +24,8 @@ function getGridStyle(layout: LayoutType, count: number): React.CSSProperties {
   if (count === 1) {
     return {
       display: 'grid',
-      gridTemplateColumns: '1fr',
-      gridTemplateRows: '1fr',
+      gridTemplateColumns: 'minmax(0, 1fr)',
+      gridTemplateRows: 'minmax(0, 1fr)',
       gap: '2px',
       height: '100%',
     }
@@ -35,8 +35,8 @@ function getGridStyle(layout: LayoutType, count: number): React.CSSProperties {
     case 'two-col':
       return {
         display: 'grid',
-        gridTemplateColumns: 'repeat(2, 1fr)',
-        gridTemplateRows: `repeat(${Math.ceil(count / 2)}, 1fr)`,
+        gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+        gridTemplateRows: `repeat(${Math.ceil(count / 2)}, minmax(0, 1fr))`,
         gap: '2px',
         height: '100%',
       }
@@ -44,8 +44,8 @@ function getGridStyle(layout: LayoutType, count: number): React.CSSProperties {
     case 'three-col':
       return {
         display: 'grid',
-        gridTemplateColumns: 'repeat(3, 1fr)',
-        gridTemplateRows: `repeat(${Math.ceil(count / 3)}, 1fr)`,
+        gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+        gridTemplateRows: `repeat(${Math.ceil(count / 3)}, minmax(0, 1fr))`,
         gap: '2px',
         height: '100%',
       }
@@ -53,8 +53,8 @@ function getGridStyle(layout: LayoutType, count: number): React.CSSProperties {
     case 'quad':
       return {
         display: 'grid',
-        gridTemplateColumns: 'repeat(2, 1fr)',
-        gridTemplateRows: 'repeat(2, 1fr)',
+        gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+        gridTemplateRows: 'repeat(2, minmax(0, 1fr))',
         gap: '2px',
         height: '100%',
       }
@@ -63,8 +63,8 @@ function getGridStyle(layout: LayoutType, count: number): React.CSSProperties {
       // 堆叠：只显示当前激活的终端
       return {
         display: 'grid',
-        gridTemplateColumns: '1fr',
-        gridTemplateRows: '1fr',
+        gridTemplateColumns: 'minmax(0, 1fr)',
+        gridTemplateRows: 'minmax(0, 1fr)',
         gap: '0px',
         height: '100%',
       }
@@ -72,8 +72,8 @@ function getGridStyle(layout: LayoutType, count: number): React.CSSProperties {
     default:
       return {
         display: 'grid',
-        gridTemplateColumns: 'repeat(2, 1fr)',
-        gridTemplateRows: 'repeat(2, 1fr)',
+        gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+        gridTemplateRows: 'repeat(2, minmax(0, 1fr))',
         gap: '2px',
         height: '100%',
       }
@@ -155,7 +155,9 @@ export function TerminalPanel({
             style={{
               display: hidden ? 'none' : 'flex',
               flexDirection: 'column',
+              minWidth: 0,
               minHeight: 0,
+              overflow: 'hidden',
               gridColumn: layout === 'stack' ? '1' : undefined,
               gridRow: layout === 'stack' ? '1' : undefined,
             }}
