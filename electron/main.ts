@@ -4,6 +4,8 @@ import path from 'path'
 import os from 'os'
 import * as pty from 'node-pty'
 import { loadAllSessions, fullTextSearch, setSessionName, deleteSessionName } from '../server/sessions'
+import { loadAllSkills } from '../server/skills'
+import { loadClaudeMd } from '../server/claudemd'
 
 // ========== 类型定义 ==========
 
@@ -85,6 +87,16 @@ ipcMain.handle('sessions:set-name', async (_event, sessionId: string, name: stri
     deleteSessionName(sessionId)
   }
   return { success: true, name: name.trim() || null }
+})
+
+// ========== IPC Handlers: 右侧工具栏 ==========
+
+ipcMain.handle('tools:load-skills', async () => {
+  return await loadAllSkills()
+})
+
+ipcMain.handle('tools:load-claudemd', async (_event, projectPath?: string) => {
+  return loadClaudeMd(projectPath)
 })
 
 // ========== IPC Handlers: 终端管理 ==========

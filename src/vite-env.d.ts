@@ -15,6 +15,10 @@ interface ElectronAPI {
     onData: (callback: (terminalId: string, data: string) => void) => () => void
     onExit: (callback: (terminalId: string, exitCode: number) => void) => () => void
   }
+  tools: {
+    loadSkills: () => Promise<import('./types/toolsidebar').SkillInfo[]>
+    loadClaudeMd: (projectPath?: string) => Promise<import('./types/toolsidebar').ClaudeMdBundle>
+  }
 }
 
 declare global {

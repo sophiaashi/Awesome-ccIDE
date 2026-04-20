@@ -12,6 +12,7 @@ import { LayoutBar } from './components/LayoutBar'
 import { TabBar } from './components/TabBar'
 // Sidebar 已移除 — 左侧列表直接显示已打开状态
 import { TerminalPanel } from './components/TerminalPanel'
+import { ToolSidebar } from './components/ToolSidebar'
 import { initProjectColors } from './utils/color'
 import { useEffect, useCallback, useState, useRef } from 'react'
 import type { Session, LayoutType, TerminalInfo } from './types/session'
@@ -456,6 +457,11 @@ export default function App() {
           />
         </div>
       </div>
+
+      {/* ========== 右侧工具栏 ========== */}
+      <ToolSidebar
+        activeProjectPath={openTerminals.find(t => t.terminalId === activeTerminalId)?.projectPath}
+      />
     </div>
   )
 }

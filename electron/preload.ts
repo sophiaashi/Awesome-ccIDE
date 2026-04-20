@@ -19,6 +19,12 @@ export interface ElectronAPI {
     onData: (callback: (terminalId: string, data: string) => void) => () => void
     onExit: (callback: (terminalId: string, exitCode: number) => void) => () => void
   }
+
+  // 右侧工具栏数据
+  tools: {
+    loadSkills: () => Promise<any[]>
+    loadClaudeMd: (projectPath?: string) => Promise<any>
+  }
 }
 
 // 通过 contextBridge 安全暴露 API
@@ -62,5 +68,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
         ipcRenderer.removeListener('terminal:exit', handler)
       }
     },
+  },
+
+  // 右侧工具栏数据
+  tools: {
+    loadSkills: () => ipcRenderer.invoke('tools:load-skills'),
+    loadClaudeMd: (projectPath?: string) =>
+      ipcRenderer.invoke('tools:load-claudemd', projectPath),
   },
 } satisfies ElectronAPI)
