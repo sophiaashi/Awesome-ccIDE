@@ -1,5 +1,5 @@
 // Session 数据读取模块
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs'
+import { readFileSync, writeFileSync, existsSync, mkdirSync, statSync } from 'fs'
 import { createReadStream } from 'fs'
 import { createInterface } from 'readline'
 import { glob } from 'glob'
@@ -125,15 +125,25 @@ export async function loadAllSessions(): Promise<{
         const projectName = extractProjectName(entry.projectPath)
         projectSet.add(projectName)
 
+        // sessions-index.json 的 modified 字段只在某些触发点更新，不反映实时交互
+        // 直接 stat .jsonl 文件拿真实 mtime 才能正确排序「最近修改」
+        let realMtime = entry.fileMtime
+        let realModified = entry.modified
+        try {
+          const stat = statSync(entry.fullPath)
+          realMtime = stat.mtimeMs
+          realModified = new Date(stat.mtimeMs).toISOString()
+        } catch {}
+
         allSessions.push({
           sessionId: entry.sessionId,
           fullPath: entry.fullPath,
-          fileMtime: entry.fileMtime,
+          fileMtime: realMtime,
           firstPrompt: entry.firstPrompt || '',
           summary: entry.summary,
           messageCount: entry.messageCount || 0,
           created: entry.created,
-          modified: entry.modified,
+          modified: realModified,
           gitBranch: entry.gitBranch || '',
           projectPath: entry.projectPath || '',
           projectName,
