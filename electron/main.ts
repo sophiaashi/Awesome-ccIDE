@@ -5,7 +5,7 @@ import os from 'os'
 import * as pty from 'node-pty'
 import { loadAllSessions, fullTextSearch, setSessionName, deleteSessionName } from '../server/sessions'
 import { loadAllSkills } from '../server/skills'
-import { loadClaudeMd } from '../server/claudemd'
+import { loadClaudeMd, saveClaudeMd } from '../server/claudemd'
 
 // ========== 类型定义 ==========
 
@@ -97,6 +97,10 @@ ipcMain.handle('tools:load-skills', async () => {
 
 ipcMain.handle('tools:load-claudemd', async (_event, projectPath?: string) => {
   return loadClaudeMd(projectPath)
+})
+
+ipcMain.handle('tools:save-claudemd', async (_event, filePath: string, content: string) => {
+  return saveClaudeMd(filePath, content)
 })
 
 // ========== IPC Handlers: 终端管理 ==========

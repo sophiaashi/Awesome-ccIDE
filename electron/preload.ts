@@ -24,6 +24,7 @@ export interface ElectronAPI {
   tools: {
     loadSkills: () => Promise<any[]>
     loadClaudeMd: (projectPath?: string) => Promise<any>
+    saveClaudeMd: (filePath: string, content: string) => Promise<{ success: boolean; error?: string }>
   }
 }
 
@@ -75,5 +76,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     loadSkills: () => ipcRenderer.invoke('tools:load-skills'),
     loadClaudeMd: (projectPath?: string) =>
       ipcRenderer.invoke('tools:load-claudemd', projectPath),
+    saveClaudeMd: (filePath: string, content: string) =>
+      ipcRenderer.invoke('tools:save-claudemd', filePath, content),
   },
 } satisfies ElectronAPI)

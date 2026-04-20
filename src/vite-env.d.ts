@@ -18,6 +18,7 @@ interface ElectronAPI {
   tools: {
     loadSkills: () => Promise<import('./types/toolsidebar').SkillInfo[]>
     loadClaudeMd: (projectPath?: string) => Promise<import('./types/toolsidebar').ClaudeMdBundle>
+    saveClaudeMd: (filePath: string, content: string) => Promise<{ success: boolean; error?: string }>
   }
 }
 

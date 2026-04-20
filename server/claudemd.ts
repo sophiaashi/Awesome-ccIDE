@@ -1,5 +1,5 @@
 // 读取用户级 + 项目级 CLAUDE.md
-import { readFileSync, existsSync } from 'fs'
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs'
 import path from 'path'
 import os from 'os'
 
@@ -39,3 +39,26 @@ export function loadClaudeMd(projectPath?: string): ClaudeMdBundle {
     project,
   }
 }
+
+/**
+ * 保存 CLAUDE.md 内容
+ * 只允许写用户级（~/.claude/CLAUDE.md）或传入的绝对路径
+ * 为避免误写，必须是以 CLAUDE.md 结尾的路径
+ */
+export function saveClaudeMd(filePath: string, content: string): { success: boolean; error?: string } {
+  try {
+    const base = path.basename(filePath)
+    if (base !== 'CLAUDE.md') {
+      return { success: false, error: '文件名必须是 CLAUDE.md' }
+    }
+    const dir = path.dirname(filePath)
+    if (!existsSync(dir)) {
+      mkdirSync(dir, { recursive: true })
+    }
+    writeFileSync(filePath, content, 'utf-8')
+    return { success: true }
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : String(err) }
+  }
+}
+
