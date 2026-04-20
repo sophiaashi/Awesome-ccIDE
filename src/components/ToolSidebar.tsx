@@ -13,10 +13,11 @@ const MAX_WIDTH = 600
 const DEFAULT_WIDTH = 340
 const COLLAPSED_WIDTH = 40
 
-const TABS: { id: ToolTabId; label: string; icon: React.ReactNode }[] = [
+const TABS: { id: ToolTabId; label: string; shortLabel?: string; icon: React.ReactNode }[] = [
   {
     id: 'skills',
     label: 'Skills',
+    shortLabel: 'Skills',
     icon: (
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
@@ -27,6 +28,7 @@ const TABS: { id: ToolTabId; label: string; icon: React.ReactNode }[] = [
   {
     id: 'shortcuts',
     label: '快捷键',
+    shortLabel: '快捷键',
     icon: (
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect x="2" y="6" width="20" height="12" rx="2" />
@@ -37,6 +39,7 @@ const TABS: { id: ToolTabId; label: string; icon: React.ReactNode }[] = [
   {
     id: 'claudemd',
     label: 'CLAUDE.md',
+    shortLabel: 'MD',
     icon: (
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -140,13 +143,13 @@ export function ToolSidebar({ activeProjectPath }: ToolSidebarProps) {
         }}
       >
         {collapsed ? (
-          /* 折叠：竖向 tab 图标 */
-          <div className="flex flex-col items-center gap-1 pt-10">
+          /* 折叠：竖向 tab 图标 + 小标签 */
+          <div className="flex flex-col items-center gap-2 pt-10">
             {TABS.map(t => (
               <button
                 key={t.id}
                 onClick={() => clickTab(t.id)}
-                className="w-8 h-8 flex items-center justify-center rounded-md cursor-pointer"
+                className="flex flex-col items-center justify-center gap-0.5 rounded-md cursor-pointer px-1 py-1.5 w-[34px]"
                 style={{
                   color: 'var(--text-muted)',
                   background: 'transparent',
@@ -162,6 +165,9 @@ export function ToolSidebar({ activeProjectPath }: ToolSidebarProps) {
                 title={`${t.label}（点击展开）`}
               >
                 {t.icon}
+                <span className="text-[8.5px] font-[510] leading-none" style={{ letterSpacing: '-0.02em' }}>
+                  {t.shortLabel || t.label}
+                </span>
               </button>
             ))}
           </div>
