@@ -87,6 +87,27 @@ export function SkillsTab() {
     } catch {}
   }, [])
 
+  // 分类折叠状态（localStorage 持久化）
+  const [collapsedCats, setCollapsedCats] = useState<Set<string>>(() => {
+    try {
+      const raw = localStorage.getItem('ccide-skills-collapsed-cats')
+      if (raw) return new Set(JSON.parse(raw) as string[])
+    } catch {}
+    return new Set()
+  })
+  useEffect(() => {
+    localStorage.setItem('ccide-skills-collapsed-cats', JSON.stringify([...collapsedCats]))
+  }, [collapsedCats])
+
+  const toggleCat = useCallback((id: string) => {
+    setCollapsedCats(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
+
   const gstackCount = filtered.filter(s => s.sourceLabel === 'gstack').length
 
   return (
@@ -119,10 +140,24 @@ export function SkillsTab() {
         </button>
       </div>
 
-      {/* 总数提示 */}
+      {/* 总数提示 + 批量折叠/展开 */}
       {!loading && (
-        <div className="shrink-0 px-3 pb-1.5 text-[10px]" style={{ color: 'var(--text-muted)' }}>
-          共 {filtered.length} 个 skill{gstackCount > 0 && <>，其中 <span style={{ color: 'var(--accent)' }}>{gstackCount} 来自 gstack [g]</span></>}
+        <div className="shrink-0 px-3 pb-1.5 flex items-center gap-2 text-[10px]" style={{ color: 'var(--text-muted)' }}>
+          <span>
+            共 {filtered.length} 个 skill{gstackCount > 0 && <>，<span style={{ color: 'var(--accent)' }}>{gstackCount} 来自 gstack [g]</span></>}
+          </span>
+          <div className="flex-1" />
+          <button
+            onClick={() => setCollapsedCats(new Set([...CATEGORIES.map(c => c.id), 'other']))}
+            className="cursor-pointer hover:text-[var(--accent)] transition-colors"
+            title="全部折叠"
+          >全部折叠</button>
+          <span style={{ opacity: 0.3 }}>|</span>
+          <button
+            onClick={() => setCollapsedCats(new Set())}
+            className="cursor-pointer hover:text-[var(--accent)] transition-colors"
+            title="全部展开"
+          >全部展开</button>
         </div>
       )}
 
@@ -139,7 +174,13 @@ export function SkillsTab() {
               const items = grouped.get(cat.id)
               if (!items || items.length === 0) return null
               return (
-                <CategorySection key={cat.id} label={cat.label} count={items.length}>
+                <CategorySection
+                  key={cat.id}
+                  label={cat.label}
+                  count={items.length}
+                  collapsed={collapsedCats.has(cat.id)}
+                  onToggle={() => toggleCat(cat.id)}
+                >
                   {items.map(s => (
                     <SkillRow
                       key={s.filePath}
@@ -154,7 +195,12 @@ export function SkillsTab() {
 
             {/* 其他 */}
             {grouped.get('other') && grouped.get('other')!.length > 0 && (
-              <CategorySection label="其他" count={grouped.get('other')!.length}>
+              <CategorySection
+                label="其他"
+                count={grouped.get('other')!.length}
+                collapsed={collapsedCats.has('other')}
+                onToggle={() => toggleCat('other')}
+              >
                 {grouped.get('other')!.map(s => (
                   <SkillRow
                     key={s.filePath}
@@ -172,17 +218,49 @@ export function SkillsTab() {
   )
 }
 
-function CategorySection({ label, count, children }: { label: string; count: number; children: React.ReactNode }) {
+function CategorySection({
+  label, count, collapsed, onToggle, children,
+}: {
+  label: string
+  count: number
+  collapsed: boolean
+  onToggle: () => void
+  children: React.ReactNode
+}) {
   return (
-    <div className="mt-3 first:mt-0">
-      <div
-        className="text-[10px] font-[510] uppercase tracking-wider mb-1 px-1 flex items-center gap-1.5"
-        style={{ color: 'var(--text-muted)' }}
+    <div className="mt-4 first:mt-1">
+      <button
+        onClick={onToggle}
+        className="w-full flex items-center gap-2 px-2.5 py-2 rounded-md cursor-pointer transition-all"
+        style={{
+          background: 'var(--bg-tertiary)',
+          borderLeft: '3px solid var(--accent)',
+        }}
+        onMouseEnter={e => { e.currentTarget.style.filter = 'brightness(1.1)' }}
+        onMouseLeave={e => { e.currentTarget.style.filter = 'none' }}
       >
-        <span>{label}</span>
-        <span className="text-[9px]" style={{ opacity: 0.7 }}>({count})</span>
-      </div>
-      {children}
+        <svg
+          width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+          style={{
+            color: 'var(--text-muted)',
+            transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
+            transition: 'transform 0.15s',
+            flexShrink: 0,
+          }}
+        >
+          <path d="M4 6l4 4 4-4" />
+        </svg>
+        <span className="flex-1 text-left text-[13px] font-[590] truncate" style={{ color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
+          {label}
+        </span>
+        <span
+          className="text-[10.5px] font-[590] tabular-nums px-1.5 py-[1px] rounded-[3px]"
+          style={{ background: 'rgba(218,119,86,0.15)', color: 'var(--accent)' }}
+        >
+          {count}
+        </span>
+      </button>
+      {!collapsed && <div className="mt-1 pl-1">{children}</div>}
     </div>
   )
 }
@@ -192,7 +270,7 @@ function SkillRow({ skill, isCopied, onClick }: { skill: SkillInfo; isCopied: bo
   return (
     <div
       onClick={onClick}
-      className="group cursor-pointer rounded-md px-2 py-1.5 mb-1 transition-colors"
+      className="group cursor-pointer rounded-md px-2 py-1 mb-0.5 transition-colors"
       style={{ background: isCopied ? 'rgba(218,119,86,0.12)' : 'transparent' }}
       onMouseEnter={e => { if (!isCopied) e.currentTarget.style.background = 'var(--bg-tertiary)' }}
       onMouseLeave={e => { if (!isCopied) e.currentTarget.style.background = 'transparent' }}
@@ -210,7 +288,7 @@ function SkillRow({ skill, isCopied, onClick }: { skill: SkillInfo; isCopied: bo
         )}
       </div>
       {skill.description && (
-        <p className="text-[11px] mt-0.5 line-clamp-2" style={{ color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+        <p className="text-[11px] mt-px line-clamp-2" style={{ color: 'var(--text-secondary)', lineHeight: 1.35 }}>
           {skill.description}
         </p>
       )}
