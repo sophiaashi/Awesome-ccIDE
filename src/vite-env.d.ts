@@ -23,6 +23,7 @@ interface ElectronAPI {
     taskAction: (label: string, plistPath: string, action: 'start' | 'stop' | 'restart' | 'kickstart') => Promise<{ success: boolean; error?: string }>
     taskLog: (logPath: string, lines?: number) => Promise<{ success: boolean; content?: string; error?: string }>
     taskSetName: (label: string, name: string) => Promise<{ success: boolean }>
+    taskDelete: (label: string, plistPath: string) => Promise<{ success: boolean; error?: string }>
   }
 }
 

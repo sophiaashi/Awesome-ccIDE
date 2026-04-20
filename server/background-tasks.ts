@@ -1,7 +1,7 @@
 // 扫描 ~/Library/LaunchAgents/ 下用户自定义的 launchd 任务
 // 过滤掉 com.apple.* / com.google.* / application.* 等非用户自装的
 // 返回每个任务的元数据 + 实时运行状态
-import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 'fs'
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, unlinkSync } from 'fs'
 import { spawnSync } from 'child_process'
 import path from 'path'
 import os from 'os'
@@ -246,6 +246,42 @@ export async function performTaskAction(
         return { success: true }
       }
     }
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : String(err) }
+  }
+}
+
+// ========== 删除任务 ==========
+// 先 bootout（如果已加载）再 rm plist 文件。同时清理自定义名称。
+
+export async function deleteTask(label: string, plistPath: string): Promise<ActionResult> {
+  const uid = process.getuid?.() ?? 501
+  const serviceTarget = `gui/${uid}/${label}`
+  try {
+    // 先 bootout（忽略错误 — 可能本来就没加载）
+    spawnSync('/bin/launchctl', ['bootout', serviceTarget], { encoding: 'utf-8', timeout: 5000 })
+
+    // 安全检查：必须在 ~/Library/LaunchAgents/ 下的 .plist
+    const expectedDir = path.join(os.homedir(), 'Library', 'LaunchAgents')
+    const resolved = path.resolve(plistPath)
+    if (!resolved.startsWith(expectedDir + path.sep) || !resolved.endsWith('.plist')) {
+      return { success: false, error: `非法路径：${plistPath}` }
+    }
+    if (!existsSync(resolved)) {
+      return { success: false, error: 'plist 文件不存在' }
+    }
+
+    // 删除 plist
+    unlinkSync(resolved)
+
+    // 清除自定义名称
+    const names = loadTaskNames()
+    if (names[label]) {
+      delete names[label]
+      saveTaskNames(names)
+    }
+
+    return { success: true }
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : String(err) }
   }

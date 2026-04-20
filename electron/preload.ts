@@ -29,6 +29,7 @@ export interface ElectronAPI {
     taskAction: (label: string, plistPath: string, action: 'start' | 'stop' | 'restart' | 'kickstart') => Promise<{ success: boolean; error?: string }>
     taskLog: (logPath: string, lines?: number) => Promise<{ success: boolean; content?: string; error?: string }>
     taskSetName: (label: string, name: string) => Promise<{ success: boolean }>
+    taskDelete: (label: string, plistPath: string) => Promise<{ success: boolean; error?: string }>
   }
 }
 
@@ -89,5 +90,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('tools:task-log', logPath, lines),
     taskSetName: (label: string, name: string) =>
       ipcRenderer.invoke('tools:task-set-name', label, name),
+    taskDelete: (label: string, plistPath: string) =>
+      ipcRenderer.invoke('tools:task-delete', label, plistPath),
   },
 } satisfies ElectronAPI)

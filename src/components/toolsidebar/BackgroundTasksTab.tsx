@@ -15,6 +15,7 @@ export function BackgroundTasksTab() {
   const [renamingLabel, setRenamingLabel] = useState<string | null>(null)
   const [renameDraft, setRenameDraft] = useState('')
   const renameRef = useRef<HTMLInputElement>(null)
+  const [pendingDelete, setPendingDelete] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -80,6 +81,24 @@ export function BackgroundTasksTab() {
     setRenamingLabel(null)
     load()
   }, [renamingLabel, renameDraft, load])
+
+  const doDelete = useCallback(async (task: BackgroundTask) => {
+    if (pendingDelete !== task.label) {
+      // 第一次点：进入确认态
+      setPendingDelete(task.label)
+      setTimeout(() => setPendingDelete(prev => prev === task.label ? null : prev), 4000)
+      return
+    }
+    // 第二次点：真删
+    setPendingDelete(null)
+    setActionError(null)
+    const res = await window.electronAPI.tools.taskDelete(task.label, task.plistPath)
+    if (!res.success) {
+      setActionError({ label: task.label, msg: res.error || '删除失败' })
+      return
+    }
+    load()
+  }, [pendingDelete, load])
 
   return (
     <div className="flex flex-col h-full">
@@ -253,6 +272,10 @@ export function BackgroundTasksTab() {
                   label={isExpanded ? '收起日志' : '看日志'}
                   onClick={() => toggleLog(task)}
                 />
+                <DeleteBtn
+                  confirming={pendingDelete === task.label}
+                  onClick={() => doDelete(task)}
+                />
               </div>
 
               {/* 展开的日志 */}
@@ -302,6 +325,41 @@ function TypeTag({ type }: { type: BackgroundTask['type'] }) {
     >
       {m.label}
     </span>
+  )
+}
+
+function DeleteBtn({ confirming, onClick }: { confirming: boolean; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex items-center gap-1 text-[10px] font-[510] px-1.5 h-5 rounded-[3px] cursor-pointer transition-all"
+      style={{
+        background: confirming ? 'var(--accent)' : 'transparent',
+        color: confirming ? '#fff' : 'var(--text-muted)',
+        border: `1px solid ${confirming ? 'var(--accent)' : 'var(--border)'}`,
+      }}
+      onMouseEnter={e => {
+        if (!confirming) {
+          e.currentTarget.style.color = 'var(--accent)'
+          e.currentTarget.style.borderColor = 'rgba(218,119,86,0.4)'
+        }
+      }}
+      onMouseLeave={e => {
+        if (!confirming) {
+          e.currentTarget.style.color = 'var(--text-muted)'
+          e.currentTarget.style.borderColor = 'var(--border)'
+        }
+      }}
+      title={confirming ? '再点一次确认删除' : '删除任务（会先 bootout + rm plist）'}
+    >
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="3 6 5 6 21 6" />
+        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+        <path d="M10 11v6M14 11v6" />
+        <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+      </svg>
+      {confirming && <span>确认？</span>}
+    </button>
   )
 }
 

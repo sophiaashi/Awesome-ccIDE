@@ -11,6 +11,7 @@ import {
   performTaskAction,
   readTaskLog,
   setTaskName,
+  deleteTask,
 } from '../server/background-tasks'
 
 // ========== 类型定义 ==========
@@ -124,6 +125,10 @@ ipcMain.handle('tools:task-log', async (_event, logPath: string, lines?: number)
 ipcMain.handle('tools:task-set-name', async (_event, label: string, name: string) => {
   setTaskName(label, name)
   return { success: true }
+})
+
+ipcMain.handle('tools:task-delete', async (_event, label: string, plistPath: string) => {
+  return await deleteTask(label, plistPath)
 })
 
 // ========== IPC Handlers: 终端管理 ==========
