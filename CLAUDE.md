@@ -88,6 +88,44 @@ gh release create v1.0.0 \
 - 字重：400（阅读）/ 510（强调）/ 590（标题）
 - 明亮模式通过 `[data-theme="light"]` 切换，变量在 `src/index.css`
 
+## 代码签名（self-signed）
+
+打包用 `ccIDE Dev` self-signed cert（存在用户 login keychain），避免 ad-hoc 签名每次重装权限清零。**如换机或 keychain 重建** 需要重新导入或重新创建：
+
+```bash
+# 一次性创建（cert 有效期 10 年）
+mkdir -p /tmp/ccide-cert && cd /tmp/ccide-cert
+cat > csr.cnf <<'CNF'
+[req]
+distinguished_name = dn
+prompt = no
+x509_extensions = v3_code_sign
+[dn]
+CN = ccIDE Dev
+[v3_code_sign]
+basicConstraints = CA:FALSE
+keyUsage = digitalSignature
+extendedKeyUsage = codeSigning
+CNF
+openssl req -x509 -newkey rsa:2048 -sha256 -days 3650 -nodes \
+  -config csr.cnf -keyout key.pem -out cert.pem
+openssl pkcs12 -export -legacy -out cert.p12 -inkey key.pem -in cert.pem \
+  -name "ccIDE Dev" -passout pass:ccide
+security import cert.p12 -k ~/Library/Keychains/login.keychain-db \
+  -P ccide -T /usr/bin/codesign -A
+security add-trusted-cert -p codeSign \
+  -k ~/Library/Keychains/login.keychain-db cert.pem
+# 验证
+security find-identity -v -p codesigning | grep "ccIDE Dev"
+```
+
+关键坑：
+- openssl 3.x 默认 p12 格式 macOS `security` 不认，**必须加 `-legacy`**
+- cert 必须 `add-trusted-cert` 打 code signing trust 才会被 `codesign` 识别
+- p12 空密码 macOS 也不认，所以用 `ccide` 作密码
+
+建议把 `/tmp/ccide-cert/cert.p12` 备份到安全位置（比如 1Password / 加密 U 盘），防止 keychain 意外丢失后需要重建 identity。
+
 ## 禁区
 
 - 不要修改 `~/.claude/` 下的任何文件（只读）
