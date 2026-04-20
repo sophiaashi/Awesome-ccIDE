@@ -258,21 +258,31 @@ select {
   border-bottom: 1px solid var(--border);
 }
 
-/* ========== 通知闪烁（Claude Code hook 触发） ========== */
+/* ========== 通知闪烁（Claude Code hook 触发） ==========
+ * 用蓝色（#58A6FF，info 色系）避免和 selected / active 的橙色混淆。
+ * 用 outline（在 border 之外）+ 大尺寸 box-shadow 发光，波动幅度拉大。
+ */
 @keyframes ccide-notify-pulse {
   0%, 100% {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 0 rgba(218, 119, 86, 0.55), 0 0 24px 0 rgba(218, 119, 86, 0);
+    outline: 2px solid rgba(88, 166, 255, 0.55);
+    outline-offset: -1px;
+    box-shadow:
+      0 0 0 0 rgba(88, 166, 255, 0.55),
+      0 0 24px 0 rgba(88, 166, 255, 0);
   }
   50% {
-    border-color: #F28560;
-    box-shadow: 0 0 0 3px rgba(218, 119, 86, 0.45), 0 0 40px 6px rgba(218, 119, 86, 0.7);
+    outline: 3px solid rgba(88, 166, 255, 1);
+    outline-offset: 1px;
+    box-shadow:
+      0 0 0 6px rgba(88, 166, 255, 0.35),
+      0 0 60px 10px rgba(88, 166, 255, 0.8);
   }
 }
 .notify-pulse {
-  animation: ccide-notify-pulse 1.4s ease-in-out infinite;
-  border-color: var(--accent) !important;
+  animation: ccide-notify-pulse 1.6s ease-in-out infinite;
+  border-radius: 8px; /* outline 跟随圆角 */
 }
 .notify-pulse .terminal-header {
-  background: rgba(218, 119, 86, 0.12) !important;
+  background: rgba(88, 166, 255, 0.18) !important;
+  border-bottom-color: rgba(88, 166, 255, 0.5) !important;
 }

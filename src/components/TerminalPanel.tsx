@@ -163,7 +163,8 @@ export function TerminalPanel({
               flexDirection: 'column',
               minWidth: 0,
               minHeight: 0,
-              overflow: 'hidden',
+              // 注意：这里不要加 overflow:hidden！TerminalPane 自己已经 rounded-lg+overflow-hidden，
+              // 再加一层会把通知闪烁的 outline/box-shadow 裁掉（只剩圆角外角落露一点点）
               gridColumn: layout === 'stack' ? '1' : undefined,
               gridRow: layout === 'stack' ? '1' : undefined,
             }}

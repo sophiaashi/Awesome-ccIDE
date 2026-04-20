@@ -1,6 +1,19 @@
 // 本地 HTTP server，接收 Claude Code hook 的通知请求
 // 只绑定 127.0.0.1，不对外暴露
 import http from 'http'
+import { appendFileSync, mkdirSync, existsSync } from 'fs'
+import path from 'path'
+import os from 'os'
+
+const DEBUG_LOG = path.join(os.homedir(), '.claude-session-manager', 'notify-debug.log')
+
+function debugLog(msg: string) {
+  try {
+    const dir = path.dirname(DEBUG_LOG)
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
+    appendFileSync(DEBUG_LOG, `[${new Date().toISOString()}] ${msg}\n`)
+  } catch {}
+}
 
 export type NotifyEventType = 'stop' | 'notify'
 
@@ -48,6 +61,10 @@ export function startNotifyServer(): http.Server {
       const sessionId =
         raw.session_id || raw.sessionId ||
         raw.hook_input?.session_id || ''
+
+      // 调试日志：记录完整 payload 以便排查 sessionId 匹配问题
+      debugLog(`event=${event} sessionId="${sessionId}" cwd="${raw.cwd || ''}" keys=${Object.keys(raw).join(',')} raw=${JSON.stringify(raw).slice(0, 500)}`)
+
       listeners.forEach(l => {
         try {
           l({

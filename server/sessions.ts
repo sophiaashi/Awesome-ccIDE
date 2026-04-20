@@ -122,9 +122,6 @@ export async function loadAllSessions(): Promise<{
       if (!indexData.entries || !Array.isArray(indexData.entries)) continue
 
       for (const entry of indexData.entries) {
-        const projectName = extractProjectName(entry.projectPath)
-        projectSet.add(projectName)
-
         // sessions-index.json 的 modified 字段只在某些触发点更新，不反映实时交互
         // 直接 stat .jsonl 文件拿真实 mtime 才能正确排序「最近修改」
         let realMtime = entry.fileMtime
@@ -134,6 +131,28 @@ export async function loadAllSessions(): Promise<{
           realMtime = stat.mtimeMs
           realModified = new Date(stat.mtimeMs).toISOString()
         } catch {}
+
+        // sessions-index.json 里的 projectPath 有时会和 jsonl 里真实的 cwd 不一致
+        // （例：Claude 把 home 目录的 session 错写成 .claude-code-daily）
+        // 导致 `cd <错的 projectPath> && claude --resume` 报 "No conversation found"
+        // 修复：读 jsonl 前几行里的 cwd 字段，以它为准
+        let realProjectPath = entry.projectPath || ''
+        try {
+          const head = readFileSync(entry.fullPath, 'utf-8').split('\n').slice(0, 10)
+          for (const line of head) {
+            if (!line.trim()) continue
+            try {
+              const obj = JSON.parse(line)
+              if (obj.cwd && typeof obj.cwd === 'string') {
+                realProjectPath = obj.cwd
+                break
+              }
+            } catch {}
+          }
+        } catch {}
+
+        const projectName = extractProjectName(realProjectPath)
+        projectSet.add(projectName)
 
         allSessions.push({
           sessionId: entry.sessionId,
@@ -145,7 +164,7 @@ export async function loadAllSessions(): Promise<{
           created: entry.created,
           modified: realModified,
           gitBranch: entry.gitBranch || '',
-          projectPath: entry.projectPath || '',
+          projectPath: realProjectPath,
           projectName,
           isSidechain: entry.isSidechain || false,
         })
