@@ -24,6 +24,8 @@ interface ElectronAPI {
     taskLog: (logPath: string, lines?: number) => Promise<{ success: boolean; content?: string; error?: string }>
     taskSetName: (label: string, name: string) => Promise<{ success: boolean }>
     taskDelete: (label: string, plistPath: string) => Promise<{ success: boolean; error?: string }>
+    loadNotes: () => Promise<{ content: string; path: string }>
+    saveNotes: (content: string) => Promise<{ success: boolean; error?: string }>
   }
   hooks: {
     check: () => Promise<{ stopInstalled: boolean; notifyInstalled: boolean }>

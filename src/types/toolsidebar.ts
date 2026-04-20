@@ -1,4 +1,4 @@
-export type ToolTabId = 'skills' | 'shortcuts' | 'claudemd' | 'tasks'
+export type ToolTabId = 'skills' | 'shortcuts' | 'claudemd' | 'tasks' | 'notes'
 
 export interface BackgroundTask {
   label: string

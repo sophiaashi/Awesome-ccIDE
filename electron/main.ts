@@ -15,6 +15,7 @@ import {
 } from '../server/background-tasks'
 import { checkHooksInstalled, installHooks } from '../server/hooks-install'
 import { startNotifyServer, onNotify } from './notify-server'
+import { loadNotes, saveNotes } from '../server/notes'
 
 // ========== 类型定义 ==========
 
@@ -131,6 +132,14 @@ ipcMain.handle('tools:task-set-name', async (_event, label: string, name: string
 
 ipcMain.handle('tools:task-delete', async (_event, label: string, plistPath: string) => {
   return await deleteTask(label, plistPath)
+})
+
+ipcMain.handle('tools:load-notes', async () => {
+  return loadNotes()
+})
+
+ipcMain.handle('tools:save-notes', async (_event, content: string) => {
+  return saveNotes(content)
 })
 
 // ========== IPC Handlers: 终端管理 ==========
