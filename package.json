@@ -54,6 +54,7 @@
       "icon": "public/icon.icns",
       "hardenedRuntime": false,
       "gatekeeperAssess": false,
+      "identity": "ccIDE Dev",
       "entitlements": "build/entitlements.mac.plist",
       "entitlementsInherit": "build/entitlements.mac.plist",
       "extendInfo": {
