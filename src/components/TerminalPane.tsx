@@ -16,10 +16,14 @@ interface TerminalPaneProps {
   projectColor?: string
   /** 是否当前激活（聚焦） */
   isActive?: boolean
+  /** 是否处于通知闪烁态（Claude Code Stop/Notification hook 触发） */
+  notifying?: boolean
   /** 关闭终端回调 */
   onClose?: (terminalId: string) => void
   /** 点击激活回调 */
   onActivate?: (terminalId: string) => void
+  /** 终端有新输出时触发（用于清除通知） */
+  onData?: (terminalId: string) => void
 }
 
 export function TerminalPane({
@@ -28,8 +32,10 @@ export function TerminalPane({
   projectName,
   projectColor = 'var(--text-muted)',
   isActive = false,
+  notifying = false,
   onClose,
   onActivate,
+  onData: onDataCallback,
 }: TerminalPaneProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const terminalRef = useRef<Terminal | null>(null)
@@ -103,6 +109,7 @@ export function TerminalPane({
     const unsubData = window.electronAPI.terminal.onData((tid, data) => {
       if (tid === terminalId) {
         terminal.write(data)
+        onDataCallback?.(terminalId)
       }
     })
 
@@ -168,7 +175,7 @@ export function TerminalPane({
 
   return (
     <div
-      className="flex flex-col h-full overflow-hidden rounded-lg"
+      className={`flex flex-col h-full overflow-hidden rounded-lg ${notifying ? 'notify-pulse' : ''}`}
       style={{
         border: isActive
           ? '1px solid var(--accent)'

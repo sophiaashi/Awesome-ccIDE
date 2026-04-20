@@ -14,6 +14,10 @@ interface TerminalPanelProps {
   onCloseTerminal: (terminalId: string) => void
   /** 激活终端回调 */
   onActivateTerminal: (terminalId: string) => void
+  /** 当前处于通知态的 sessionId 集合 */
+  notifyingSessionIds?: Set<string>
+  /** terminal 有新输出时触发 */
+  onTerminalData?: (terminalId: string) => void
 }
 
 /** 根据布局类型和终端数量计算 CSS grid 样式 */
@@ -86,6 +90,8 @@ export function TerminalPanel({
   activeTerminalId,
   onCloseTerminal,
   onActivateTerminal,
+  notifyingSessionIds,
+  onTerminalData,
 }: TerminalPanelProps) {
   // 无终端时显示空状态
   if (terminals.length === 0) {
@@ -168,8 +174,10 @@ export function TerminalPanel({
               projectName={terminal.projectName}
               projectColor={terminal.projectName ? getProjectColor(terminal.projectName) : undefined}
               isActive={isActive}
+              notifying={!!terminal.sessionId && !!notifyingSessionIds?.has(terminal.sessionId)}
               onClose={onCloseTerminal}
               onActivate={onActivateTerminal}
+              onData={onTerminalData}
             />
           </div>
         )

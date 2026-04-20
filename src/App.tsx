@@ -47,6 +47,17 @@ export default function App() {
   /** 通过键盘 Enter 触发 resume 的目标 sessionId */
   const [keyboardResumeId, setKeyboardResumeId] = useState<string | null>(null)
 
+  /** 处于闪烁通知态的 sessionId 集合（来自 Claude Code hook） */
+  const [notifyingSessionIds, setNotifyingSessionIds] = useState<Set<string>>(new Set())
+
+  /** hook 是否已安装（null=未知 / false=未装 / true=已装） */
+  const [hooksInstalled, setHooksInstalled] = useState<boolean | null>(null)
+  const [hookBannerDismissed, setHookBannerDismissed] = useState<boolean>(
+    () => localStorage.getItem('ccide-hook-banner-dismissed') === '1',
+  )
+  const [installingHook, setInstallingHook] = useState(false)
+  const [hookInstallMsg, setHookInstallMsg] = useState<string>('')
+
   // ========== 终端操作 ==========
 
   /**
@@ -159,6 +170,73 @@ export default function App() {
     activeTerminalId,
     onActivate: handleActivateTerminal,
   })
+
+  // ========== 通知订阅：Claude Code hook 触发时标记对应 session 闪烁 ==========
+  useEffect(() => {
+    if (!window.electronAPI?.hooks) return
+    const unsub = window.electronAPI.hooks.onNotify(ev => {
+      if (!ev.sessionId) return
+      setNotifyingSessionIds(prev => {
+        if (prev.has(ev.sessionId)) return prev
+        const next = new Set(prev)
+        next.add(ev.sessionId)
+        return next
+      })
+    })
+    return unsub
+  }, [])
+
+  /** 清除某个 sessionId 的通知态 */
+  const clearNotify = useCallback((sessionId: string) => {
+    setNotifyingSessionIds(prev => {
+      if (!prev.has(sessionId)) return prev
+      const next = new Set(prev)
+      next.delete(sessionId)
+      return next
+    })
+  }, [])
+
+  /** 激活终端时清除该 session 的通知 */
+  useEffect(() => {
+    if (!activeTerminalId) return
+    const active = openTerminals.find(t => t.terminalId === activeTerminalId)
+    if (active?.sessionId) clearNotify(active.sessionId)
+  }, [activeTerminalId, openTerminals, clearNotify])
+
+  /** terminal 有新输出（用户/pty 交互）时清除通知 */
+  const handleTerminalData = useCallback((terminalId: string) => {
+    const t = openTerminals.find(x => x.terminalId === terminalId)
+    if (t?.sessionId && notifyingSessionIds.has(t.sessionId)) {
+      clearNotify(t.sessionId)
+    }
+  }, [openTerminals, notifyingSessionIds, clearNotify])
+
+  // ========== hook 安装检查 ==========
+  useEffect(() => {
+    if (!window.electronAPI?.hooks) return
+    window.electronAPI.hooks.check().then(r => {
+      setHooksInstalled(r.stopInstalled && r.notifyInstalled)
+    }).catch(() => {})
+  }, [])
+
+  const installHook = useCallback(async () => {
+    setInstallingHook(true)
+    setHookInstallMsg('')
+    const res = await window.electronAPI.hooks.install()
+    setInstallingHook(false)
+    if (res.success) {
+      setHooksInstalled(true)
+      setHookInstallMsg('✓ 已启用')
+      setTimeout(() => setHookInstallMsg(''), 2500)
+    } else {
+      setHookInstallMsg(`失败：${res.error || '未知错误'}`)
+    }
+  }, [])
+
+  const dismissHookBanner = useCallback(() => {
+    setHookBannerDismissed(true)
+    localStorage.setItem('ccide-hook-banner-dismissed', '1')
+  }, [])
 
   // 项目颜色初始化
   useEffect(() => {
@@ -446,6 +524,43 @@ export default function App() {
           />
         )}
 
+        {/* Hook 启用提示 banner（只在未启用且未被 dismiss 时显示） */}
+        {hooksInstalled === false && !hookBannerDismissed && (
+          <div
+            className="shrink-0 flex items-center gap-2 px-4 py-2 text-[12px]"
+            style={{
+              background: 'rgba(218,119,86,0.10)',
+              borderBottom: '1px solid rgba(218,119,86,0.3)',
+              color: 'var(--text-primary)',
+            }}
+          >
+            <span style={{ fontSize: '14px' }}>⚡️</span>
+            <span className="flex-1">
+              启用「Claude 停止/等待时闪烁提示」？会在你的 <code style={{ fontFamily: "'SF Mono', monospace", fontSize: '11px' }}>~/.claude/settings.json</code> 追加两条 hook（不覆盖现有）。
+            </span>
+            {hookInstallMsg && (
+              <span className="text-[11px] font-[510]" style={{ color: hookInstallMsg.startsWith('✓') ? 'var(--success, #3FB950)' : 'var(--accent)' }}>
+                {hookInstallMsg}
+              </span>
+            )}
+            <button
+              onClick={installHook}
+              disabled={installingHook}
+              className="text-[11px] font-[510] px-2.5 h-6 rounded-md cursor-pointer"
+              style={{ background: 'var(--accent)', color: '#fff' }}
+            >
+              {installingHook ? '安装中...' : '开启'}
+            </button>
+            <button
+              onClick={dismissHookBanner}
+              className="text-[11px] font-[510] px-2 h-6 rounded-md cursor-pointer"
+              style={{ color: 'var(--text-muted)' }}
+            >
+              稍后
+            </button>
+          </div>
+        )}
+
         {/* 终端面板 */}
         <div className="flex-1 flex min-w-0 overflow-hidden">
           <TerminalPanel
@@ -454,6 +569,8 @@ export default function App() {
             activeTerminalId={activeTerminalId}
             onCloseTerminal={handleCloseTerminal}
             onActivateTerminal={handleActivateTerminal}
+            notifyingSessionIds={notifyingSessionIds}
+            onTerminalData={handleTerminalData}
           />
         </div>
       </div>

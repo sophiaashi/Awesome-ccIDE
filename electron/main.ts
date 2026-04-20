@@ -13,6 +13,8 @@ import {
   setTaskName,
   deleteTask,
 } from '../server/background-tasks'
+import { checkHooksInstalled, installHooks } from '../server/hooks-install'
+import { startNotifyServer, onNotify } from './notify-server'
 
 // ========== 类型定义 ==========
 
@@ -235,12 +237,30 @@ ipcMain.handle('terminal:close', async (_event, terminalId: string) => {
 app.whenReady().then(() => {
   createWindow()
 
+  // 启动通知 HTTP server，监听 Claude Code hook 的回调
+  startNotifyServer()
+  onNotify(ev => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('notify:event', ev)
+    }
+  })
+
   // macOS: 点击 dock 图标时如果没有窗口则创建一个
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow()
     }
   })
+})
+
+// ========== IPC Handlers: Hook 安装 ==========
+
+ipcMain.handle('hooks:check', async () => {
+  return checkHooksInstalled()
+})
+
+ipcMain.handle('hooks:install', async () => {
+  return installHooks()
 })
 
 // 所有窗口关闭时退出（macOS 除外）

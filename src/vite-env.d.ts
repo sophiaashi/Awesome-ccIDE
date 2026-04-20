@@ -25,6 +25,11 @@ interface ElectronAPI {
     taskSetName: (label: string, name: string) => Promise<{ success: boolean }>
     taskDelete: (label: string, plistPath: string) => Promise<{ success: boolean; error?: string }>
   }
+  hooks: {
+    check: () => Promise<{ stopInstalled: boolean; notifyInstalled: boolean }>
+    install: () => Promise<{ success: boolean; backup?: string; error?: string }>
+    onNotify: (cb: (ev: { event: 'stop' | 'notify'; sessionId: string; cwd?: string }) => void) => () => void
+  }
 }
 
 declare global {

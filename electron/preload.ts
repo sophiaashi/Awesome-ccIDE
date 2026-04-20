@@ -31,6 +31,13 @@ export interface ElectronAPI {
     taskSetName: (label: string, name: string) => Promise<{ success: boolean }>
     taskDelete: (label: string, plistPath: string) => Promise<{ success: boolean; error?: string }>
   }
+
+  // 通知（来自 Claude Code hook）
+  hooks: {
+    check: () => Promise<{ stopInstalled: boolean; notifyInstalled: boolean }>
+    install: () => Promise<{ success: boolean; backup?: string; error?: string }>
+    onNotify: (cb: (ev: { event: 'stop' | 'notify'; sessionId: string; cwd?: string }) => void) => () => void
+  }
 }
 
 // 通过 contextBridge 安全暴露 API
@@ -92,5 +99,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('tools:task-set-name', label, name),
     taskDelete: (label: string, plistPath: string) =>
       ipcRenderer.invoke('tools:task-delete', label, plistPath),
+  },
+
+  hooks: {
+    check: () => ipcRenderer.invoke('hooks:check'),
+    install: () => ipcRenderer.invoke('hooks:install'),
+    onNotify: (cb: (ev: any) => void) => {
+      const handler = (_e: any, ev: any) => cb(ev)
+      ipcRenderer.on('notify:event', handler)
+      return () => ipcRenderer.removeListener('notify:event', handler)
+    },
   },
 } satisfies ElectronAPI)
