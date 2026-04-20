@@ -1,0 +1,66 @@
+name: 🐞 Bug report
+description: Something is broken or behaves unexpectedly
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a bug! A few lines of context up front saves a lot of back-and-forth later.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear one-paragraph description of the bug.
+      placeholder: When I clicked Resume on a session, the terminal opened but claude reported 'No conversation found'.
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Numbered list, copy-pasteable if possible.
+      placeholder: |
+        1. Open ccIDE
+        2. Click the third session in the list
+        3. Observe the error in the embedded terminal
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+      placeholder: The session should resume without error.
+
+  - type: input
+    id: ccide-version
+    attributes:
+      label: ccIDE version
+      description: See ccIDE → About, or run `/usr/bin/defaults read /Applications/ccIDE.app/Contents/Info.plist CFBundleShortVersionString`
+      placeholder: "1.0.0"
+    validations:
+      required: true
+
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version + chip
+      placeholder: "macOS 15.2 (Apple M3 Pro)"
+    validations:
+      required: true
+
+  - type: input
+    id: claude-version
+    attributes:
+      label: Claude Code CLI version
+      description: "`claude --version`"
+      placeholder: "2.1.114"
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or screenshots (optional)
+      description: Drag and drop, or paste terminal output. Relevant logs live at `~/.claude-session-manager/notify-debug.log`.
+      render: shell

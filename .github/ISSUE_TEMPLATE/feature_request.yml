@@ -1,0 +1,36 @@
+name: 💡 Feature request
+description: Suggest a feature or improvement
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What's the problem?
+      description: Describe the workflow pain you're trying to solve, not the solution you've pre-decided. "I want X" is less useful than "every day I have to do Y and it takes 10 minutes."
+      placeholder: When I have 4 terminals running, I can never remember which one is tracking the deploy, so I alt-tab through all of them.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution (optional)
+      description: If you have an idea of what should change, say so. But don't feel obligated — sometimes a problem statement is more valuable.
+      placeholder: A pinned "watched" terminal that shows a mini-preview in the sidebar.
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you've tried
+      description: Workarounds you've already attempted, or other tools that do this but badly.
+
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Is this in scope?
+      description: ccIDE is intentionally narrow — session manager + terminal grid + right-side tool shelf. Check the boxes that apply.
+      options:
+        - label: This is about managing Claude Code sessions
+        - label: This is about multi-terminal layout / switching
+        - label: This is about the right-side tool sidebar
+        - label: This is something else entirely (may be out of scope)
