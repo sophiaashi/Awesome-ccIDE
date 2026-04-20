@@ -25,6 +25,10 @@ export interface ElectronAPI {
     loadSkills: () => Promise<any[]>
     loadClaudeMd: (projectPath?: string) => Promise<any>
     saveClaudeMd: (filePath: string, content: string) => Promise<{ success: boolean; error?: string }>
+    listTasks: () => Promise<any[]>
+    taskAction: (label: string, plistPath: string, action: 'start' | 'stop' | 'restart' | 'kickstart') => Promise<{ success: boolean; error?: string }>
+    taskLog: (logPath: string, lines?: number) => Promise<{ success: boolean; content?: string; error?: string }>
+    taskSetName: (label: string, name: string) => Promise<{ success: boolean }>
   }
 }
 
@@ -78,5 +82,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('tools:load-claudemd', projectPath),
     saveClaudeMd: (filePath: string, content: string) =>
       ipcRenderer.invoke('tools:save-claudemd', filePath, content),
+    listTasks: () => ipcRenderer.invoke('tools:list-tasks'),
+    taskAction: (label: string, plistPath: string, action: 'start' | 'stop' | 'restart' | 'kickstart') =>
+      ipcRenderer.invoke('tools:task-action', label, plistPath, action),
+    taskLog: (logPath: string, lines?: number) =>
+      ipcRenderer.invoke('tools:task-log', logPath, lines),
+    taskSetName: (label: string, name: string) =>
+      ipcRenderer.invoke('tools:task-set-name', label, name),
   },
 } satisfies ElectronAPI)

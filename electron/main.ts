@@ -6,6 +6,12 @@ import * as pty from 'node-pty'
 import { loadAllSessions, fullTextSearch, setSessionName, deleteSessionName } from '../server/sessions'
 import { loadAllSkills } from '../server/skills'
 import { loadClaudeMd, saveClaudeMd } from '../server/claudemd'
+import {
+  listBackgroundTasks,
+  performTaskAction,
+  readTaskLog,
+  setTaskName,
+} from '../server/background-tasks'
 
 // ========== 类型定义 ==========
 
@@ -101,6 +107,23 @@ ipcMain.handle('tools:load-claudemd', async (_event, projectPath?: string) => {
 
 ipcMain.handle('tools:save-claudemd', async (_event, filePath: string, content: string) => {
   return saveClaudeMd(filePath, content)
+})
+
+ipcMain.handle('tools:list-tasks', async () => {
+  return await listBackgroundTasks()
+})
+
+ipcMain.handle('tools:task-action', async (_event, label: string, plistPath: string, action: 'start' | 'stop' | 'restart' | 'kickstart') => {
+  return await performTaskAction(label, plistPath, action)
+})
+
+ipcMain.handle('tools:task-log', async (_event, logPath: string, lines?: number) => {
+  return readTaskLog(logPath, lines)
+})
+
+ipcMain.handle('tools:task-set-name', async (_event, label: string, name: string) => {
+  setTaskName(label, name)
+  return { success: true }
 })
 
 // ========== IPC Handlers: 终端管理 ==========

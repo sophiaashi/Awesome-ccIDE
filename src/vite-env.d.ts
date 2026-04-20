@@ -19,6 +19,10 @@ interface ElectronAPI {
     loadSkills: () => Promise<import('./types/toolsidebar').SkillInfo[]>
     loadClaudeMd: (projectPath?: string) => Promise<import('./types/toolsidebar').ClaudeMdBundle>
     saveClaudeMd: (filePath: string, content: string) => Promise<{ success: boolean; error?: string }>
+    listTasks: () => Promise<import('./types/toolsidebar').BackgroundTask[]>
+    taskAction: (label: string, plistPath: string, action: 'start' | 'stop' | 'restart' | 'kickstart') => Promise<{ success: boolean; error?: string }>
+    taskLog: (logPath: string, lines?: number) => Promise<{ success: boolean; content?: string; error?: string }>
+    taskSetName: (label: string, name: string) => Promise<{ success: boolean }>
   }
 }
 
