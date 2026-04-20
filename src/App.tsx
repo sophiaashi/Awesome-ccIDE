@@ -306,8 +306,13 @@ export default function App() {
           overflow: 'hidden',
         }}
       >
-        {/* macOS 标题栏拖拽区域 */}
+        {/* macOS 标题栏拖拽区域
+         * 收起态下左侧面板只有 80px 宽，但 macOS 红黄绿按钮占约 70px，
+         * 如果还在右侧塞 3 个按钮会和 traffic light 物理重叠。
+         * 所以收起态时 titlebar 里不放任何按钮（refresh/theme/collapse 都移到展开态/下方）。
+         */}
         <div className="shrink-0 flex items-end justify-end gap-1 px-2" style={{ height: '38px', WebkitAppRegion: 'drag' } as React.CSSProperties}>
+          {!leftPanelCollapsed && <>
           {/* 刷新 */}
           <button
             onClick={refresh}
@@ -351,7 +356,7 @@ export default function App() {
               </svg>
             )}
           </button>
-          {/* 收起/展开 */}
+          {/* 收起/展开（只在展开态显示） */}
           <button
             onClick={() => setLeftPanelCollapsed(prev => !prev)}
             className="cursor-pointer flex items-center justify-center rounded-md mb-1"
@@ -361,15 +366,13 @@ export default function App() {
               color: 'var(--text-muted)',
               WebkitAppRegion: 'no-drag',
             } as React.CSSProperties}
-            title={leftPanelCollapsed ? '展开面板' : '收起面板'}
+            title="收起面板"
           >
             <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-              {leftPanelCollapsed
-                ? <path d="M6 3l5 5-5 5" />
-                : <path d="M10 3L5 8l5 5" />
-              }
+              <path d="M10 3L5 8l5 5" />
             </svg>
           </button>
+          </>}
         </div>
 
         {/* 收起状态：只显示图标 */}

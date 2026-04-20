@@ -11,8 +11,9 @@ import { BackgroundTasksTab } from './toolsidebar/BackgroundTasksTab'
 import { NotesTab } from './toolsidebar/NotesTab'
 
 const MIN_WIDTH = 280
-const MAX_WIDTH = 600
-const DEFAULT_WIDTH = 340
+const MAX_WIDTH = 900
+const DEFAULT_WIDTH = 680          // 默认宽度，能容下 5 个 tab 的完整「图标 + 文字」
+const ICON_ONLY_THRESHOLD = 560    // tab bar 可用宽度 < 这个值时，tab 切到「纯图标」模式
 const COLLAPSED_WIDTH = 40
 
 const TABS: { id: ToolTabId; label: string; shortLabel?: string; icon: React.ReactNode }[] = [
@@ -86,7 +87,7 @@ export function ToolSidebar({ activeProjectPath }: ToolSidebarProps) {
     return v === null ? true : v === '1'
   })
   const [width, setWidth] = useState<number>(() => {
-    const v = parseInt(localStorage.getItem('ccide-toolsidebar-width') || '', 10)
+    const v = parseInt(localStorage.getItem('ccide-toolsidebar-width-v2') || '', 10)
     return Number.isFinite(v) && v >= MIN_WIDTH && v <= MAX_WIDTH ? v : DEFAULT_WIDTH
   })
   const [tab, setTab] = useState<ToolTabId>(() => {
@@ -95,7 +96,7 @@ export function ToolSidebar({ activeProjectPath }: ToolSidebarProps) {
   })
 
   useEffect(() => { localStorage.setItem('ccide-toolsidebar-collapsed', collapsed ? '1' : '0') }, [collapsed])
-  useEffect(() => { localStorage.setItem('ccide-toolsidebar-width', String(width)) }, [width])
+  useEffect(() => { localStorage.setItem('ccide-toolsidebar-width-v2', String(width)) }, [width])
   useEffect(() => { localStorage.setItem('ccide-toolsidebar-tab', tab) }, [tab])
 
   // 拖拽调宽（从左边缘向左拉变宽）
@@ -203,7 +204,10 @@ export function ToolSidebar({ activeProjectPath }: ToolSidebarProps) {
           </>
         ) : (
           <>
-            {/* 顶部：tab 条 + 折叠按钮 */}
+            {/* 顶部：tab 条 + 折叠按钮
+             * 响应式：宽度 >= ICON_ONLY_THRESHOLD（560）时显示「图标 + 文字」，
+             * 否则只显示图标（避免文字被挤断或 tab 溢出）
+             */}
             <div
               className="shrink-0 flex items-center gap-0.5 px-2"
               style={{
@@ -211,20 +215,24 @@ export function ToolSidebar({ activeProjectPath }: ToolSidebarProps) {
                 borderBottom: '1px solid var(--border)',
               }}
             >
-              {TABS.map(t => (
-                <button
-                  key={t.id}
-                  onClick={() => clickTab(t.id)}
-                  className="flex items-center gap-1.5 px-2.5 h-7 rounded-md cursor-pointer transition-colors"
-                  style={{
-                    background: tab === t.id ? 'var(--bg-tertiary)' : 'transparent',
-                    color: tab === t.id ? 'var(--text-primary)' : 'var(--text-muted)',
-                  }}
-                >
-                  {t.icon}
-                  <span className="text-[11px] font-[510]">{t.label}</span>
-                </button>
-              ))}
+              {TABS.map(t => {
+                const iconOnly = width < ICON_ONLY_THRESHOLD
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => clickTab(t.id)}
+                    className={`flex items-center justify-center rounded-md cursor-pointer transition-colors h-7 ${iconOnly ? 'w-7' : 'gap-1.5 px-2.5'}`}
+                    style={{
+                      background: tab === t.id ? 'var(--bg-tertiary)' : 'transparent',
+                      color: tab === t.id ? 'var(--text-primary)' : 'var(--text-muted)',
+                    }}
+                    title={iconOnly ? t.label : undefined}
+                  >
+                    {t.icon}
+                    {!iconOnly && <span className="text-[11px] font-[510]">{t.label}</span>}
+                  </button>
+                )
+              })}
               <div className="flex-1" />
               <button
                 onClick={() => setCollapsed(true)}
