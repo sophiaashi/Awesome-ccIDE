@@ -4,6 +4,7 @@
 import { useSessions } from './hooks/useSessions'
 import { useSearch } from './hooks/useSearch'
 import { useKeyboard } from './hooks/useKeyboard'
+import { useTabShortcuts } from './hooks/useTabShortcuts'
 import { SessionList } from './components/SessionList'
 import { SearchBar } from './components/SearchBar'
 import { FilterBar } from './components/FilterBar'
@@ -149,6 +150,13 @@ export default function App() {
         setKeyboardResumeId(session.sessionId)
       }
     },
+  })
+
+  // 终端 Tab 切换快捷键（⌘1~9 / ⌃Tab / ⌃⇧Tab）
+  useTabShortcuts({
+    terminals: openTerminals,
+    activeTerminalId,
+    onActivate: handleActivateTerminal,
   })
 
   // 项目颜色初始化
