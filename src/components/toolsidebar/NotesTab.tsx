@@ -134,7 +134,7 @@ TODO 示例（- [ ] 或 - [x]，上方会显示可点击的列表）：
         <span style={{ color: 'var(--text-muted)' }}>
           {todos.length > 0 ? (
             <>TODO <b style={{ color: 'var(--text-secondary)' }}>{doneCount}/{todos.length}</b></>
-          ) : '📒 笔记'}
+          ) : '📒 备忘'}
         </span>
         <div className="flex-1" />
         {status === 'saving' && <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>保存中...</span>}

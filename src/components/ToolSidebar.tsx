@@ -65,8 +65,8 @@ const TABS: { id: ToolTabId; label: string; shortLabel?: string; icon: React.Rea
   },
   {
     id: 'notes',
-    label: '笔记',
-    shortLabel: '笔记',
+    label: '备忘',
+    shortLabel: '备忘',
     icon: (
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
