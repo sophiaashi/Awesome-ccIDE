@@ -155,9 +155,14 @@ export function ToolSidebar({ activeProjectPath }: ToolSidebarProps) {
         }}
       >
         {collapsed ? (
-          /* 折叠：竖向 tab 图标 + 小标签 */
-          <div className="flex flex-col items-center gap-2 pt-10">
-            {TABS.map(t => (
+          /* 折叠：顶部 38px 拖拽区对齐左右面板，下面是竖向 tab 图标 + 小标签 */
+          <>
+            <div
+              className="shrink-0"
+              style={{ height: '38px', WebkitAppRegion: 'drag' } as React.CSSProperties}
+            />
+            <div className="flex flex-col items-center gap-2 pt-2">
+              {TABS.map(t => (
               <button
                 key={t.id}
                 onClick={() => clickTab(t.id)}
@@ -182,7 +187,8 @@ export function ToolSidebar({ activeProjectPath }: ToolSidebarProps) {
                 </span>
               </button>
             ))}
-          </div>
+            </div>
+          </>
         ) : (
           <>
             {/* 顶部：tab 条 + 折叠按钮 */}
