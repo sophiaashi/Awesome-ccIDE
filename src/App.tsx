@@ -102,6 +102,7 @@ export default function App() {
     ;(async () => {
       try {
         const projectPath = homedir || '/Users/sophia'
+        const createdAtMs = Date.now()
         const { terminalId } = await window.electronAPI.terminal.create('', projectPath)
 
         const terminalInfo: TerminalInfo = {
@@ -110,6 +111,7 @@ export default function App() {
           projectPath,
           projectName: 'new',
           firstPrompt: '新 session',
+          createdAtMs,
         }
         setOpenTerminals(prev => [...prev, terminalInfo])
         setActiveTerminalId(terminalId)
@@ -170,6 +172,42 @@ export default function App() {
     activeTerminalId,
     onActivate: handleActivateTerminal,
   })
+
+  // ========== 将新开 session 的空 sessionId 终端匹配到刷新后新出现的 jsonl ==========
+  useEffect(() => {
+    if (sessions.length === 0) return
+    setOpenTerminals(prev => {
+      const unassigned = prev.some(t => !t.sessionId)
+      if (!unassigned) return prev
+      const claimed = new Set(prev.filter(t => t.sessionId).map(t => t.sessionId))
+      let changed = false
+      const next = prev.map(t => {
+        if (t.sessionId) return t
+        const candidates = sessions
+          .filter(s => s.projectPath === t.projectPath && !claimed.has(s.sessionId))
+          .filter(s => {
+            if (!t.createdAtMs) return true
+            const ms = s.modified ? new Date(s.modified).getTime() : 0
+            return ms >= t.createdAtMs - 2000  // 允许 2s 时钟漂移
+          })
+          .sort((a, b) => new Date(b.modified).getTime() - new Date(a.modified).getTime())
+        if (candidates.length > 0) {
+          const s = candidates[0]
+          claimed.add(s.sessionId)
+          changed = true
+          return {
+            ...t,
+            sessionId: s.sessionId,
+            projectName: s.projectName || t.projectName,
+            firstPrompt: s.firstPrompt || t.firstPrompt,
+            customName: s.customName,
+          }
+        }
+        return t
+      })
+      return changed ? next : prev
+    })
+  }, [sessions])
 
   // ========== 通知订阅：Claude Code hook 触发时标记对应 session 闪烁 ==========
   useEffect(() => {

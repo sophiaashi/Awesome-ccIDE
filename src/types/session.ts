@@ -61,4 +61,6 @@ export interface TerminalInfo {
   firstPrompt?: string
   /** session 的自定义名称 */
   customName?: string
+  /** 终端创建时间（ms）— 用于将新开 session 的终端匹配到刚生成的 jsonl */
+  createdAtMs?: number
 }

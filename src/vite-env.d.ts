@@ -35,6 +35,9 @@ interface ElectronAPI {
     install: () => Promise<{ success: boolean; backup?: string; error?: string }>
     onNotify: (cb: (ev: { event: 'stop' | 'notify'; sessionId: string; cwd?: string }) => void) => () => void
   }
+  shell: {
+    openExternal: (url: string) => Promise<{ success: boolean; error?: string }>
+  }
 }
 
 declare global {

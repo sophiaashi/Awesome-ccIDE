@@ -81,7 +81,9 @@ export function TerminalPane({
     })
 
     const fitAddon = new FitAddon()
-    const webLinksAddon = new WebLinksAddon()
+    const webLinksAddon = new WebLinksAddon((_event, uri) => {
+      window.electronAPI.shell.openExternal(uri).catch(() => {})
+    })
 
     terminal.loadAddon(fitAddon)
     terminal.loadAddon(webLinksAddon)

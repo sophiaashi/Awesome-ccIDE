@@ -43,6 +43,11 @@ export interface ElectronAPI {
     install: () => Promise<{ success: boolean; backup?: string; error?: string }>
     onNotify: (cb: (ev: { event: 'stop' | 'notify'; sessionId: string; cwd?: string }) => void) => () => void
   }
+
+  // 系统 shell（外部链接打开到浏览器）
+  shell: {
+    openExternal: (url: string) => Promise<{ success: boolean; error?: string }>
+  }
 }
 
 // 通过 contextBridge 安全暴露 API
@@ -121,5 +126,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.on('notify:event', handler)
       return () => ipcRenderer.removeListener('notify:event', handler)
     },
+  },
+
+  shell: {
+    openExternal: (url: string) => ipcRenderer.invoke('shell:open-external', url),
   },
 } satisfies ElectronAPI)

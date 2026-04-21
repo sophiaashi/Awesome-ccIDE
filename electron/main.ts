@@ -1,5 +1,5 @@
 // Electron 主进程 — 管理窗口、IPC 通信和 node-pty 终端实例
-import { app, BrowserWindow, ipcMain } from 'electron'
+import { app, BrowserWindow, ipcMain, shell } from 'electron'
 import path from 'path'
 import os from 'os'
 import * as pty from 'node-pty'
@@ -69,6 +69,24 @@ function createWindow(): void {
     // __dirname 是 dist-electron/electron/，所以需要上两级到项目根再进 dist
     mainWindow.loadFile(path.join(__dirname, '../../dist/index.html'))
   }
+
+  // 所有 target=_blank / window.open 都改走系统浏览器
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('mailto:')) {
+      shell.openExternal(url).catch(() => {})
+    }
+    return { action: 'deny' }
+  })
+
+  // 拦截页面内的 navigation（防止意外离开 app）
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    const isDevUrl = process.env.VITE_DEV_SERVER_URL && url.startsWith(process.env.VITE_DEV_SERVER_URL)
+    const isFileUrl = url.startsWith('file://')
+    if (!isDevUrl && !isFileUrl) {
+      event.preventDefault()
+      shell.openExternal(url).catch(() => {})
+    }
+  })
 
   mainWindow.on('closed', () => {
     mainWindow = null
@@ -157,6 +175,17 @@ ipcMain.handle('tools:remote-trigger-toggle', async (_event, id: string, enabled
 
 ipcMain.handle('tools:remote-trigger-delete', async (_event, id: string) => {
   return await deleteRemoteTrigger(id)
+})
+
+ipcMain.handle('shell:open-external', async (_event, url: string) => {
+  if (typeof url !== 'string') return { success: false, error: 'bad url' }
+  if (!/^(https?|mailto):/.test(url)) return { success: false, error: 'unsupported scheme' }
+  try {
+    await shell.openExternal(url)
+    return { success: true }
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : String(err) }
+  }
 })
 
 // ========== IPC Handlers: 终端管理 ==========
