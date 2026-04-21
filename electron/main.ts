@@ -13,6 +13,11 @@ import {
   setTaskName,
   deleteTask,
 } from '../server/background-tasks'
+import {
+  listRemoteTriggers,
+  toggleRemoteTrigger,
+  deleteRemoteTrigger,
+} from '../server/remote-triggers'
 import { checkHooksInstalled, installHooks } from '../server/hooks-install'
 import { startNotifyServer, onNotify } from './notify-server'
 import { loadNotes, saveNotes } from '../server/notes'
@@ -140,6 +145,18 @@ ipcMain.handle('tools:load-notes', async () => {
 
 ipcMain.handle('tools:save-notes', async (_event, content: string) => {
   return saveNotes(content)
+})
+
+ipcMain.handle('tools:list-remote-triggers', async () => {
+  return await listRemoteTriggers()
+})
+
+ipcMain.handle('tools:remote-trigger-toggle', async (_event, id: string, enabled: boolean) => {
+  return await toggleRemoteTrigger(id, enabled)
+})
+
+ipcMain.handle('tools:remote-trigger-delete', async (_event, id: string) => {
+  return await deleteRemoteTrigger(id)
 })
 
 // ========== IPC Handlers: 终端管理 ==========

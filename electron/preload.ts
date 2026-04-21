@@ -32,6 +32,9 @@ export interface ElectronAPI {
     taskDelete: (label: string, plistPath: string) => Promise<{ success: boolean; error?: string }>
     loadNotes: () => Promise<{ content: string; path: string }>
     saveNotes: (content: string) => Promise<{ success: boolean; error?: string }>
+    listRemoteTriggers: () => Promise<{ success: boolean; error?: string; triggers?: any[]; authRequired?: boolean }>
+    remoteTriggerToggle: (id: string, enabled: boolean) => Promise<{ success: boolean; error?: string }>
+    remoteTriggerDelete: (id: string) => Promise<{ success: boolean; error?: string }>
   }
 
   // 通知（来自 Claude Code hook）
@@ -103,6 +106,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('tools:task-delete', label, plistPath),
     loadNotes: () => ipcRenderer.invoke('tools:load-notes'),
     saveNotes: (content: string) => ipcRenderer.invoke('tools:save-notes', content),
+    listRemoteTriggers: () => ipcRenderer.invoke('tools:list-remote-triggers'),
+    remoteTriggerToggle: (id: string, enabled: boolean) =>
+      ipcRenderer.invoke('tools:remote-trigger-toggle', id, enabled),
+    remoteTriggerDelete: (id: string) =>
+      ipcRenderer.invoke('tools:remote-trigger-delete', id),
   },
 
   hooks: {

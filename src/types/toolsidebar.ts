@@ -16,6 +16,26 @@ export interface BackgroundTask {
   loaded: boolean
 }
 
+export interface RemoteTrigger {
+  id: string
+  name: string
+  cronExpression: string
+  nextRunAt: string | null
+  enabled: boolean
+  endedReason: string
+  createdAt: string
+  updatedAt: string
+  environmentId: string | null
+  firstMessage: string
+}
+
+export interface RemoteTriggerListResult {
+  success: boolean
+  error?: string
+  triggers?: RemoteTrigger[]
+  authRequired?: boolean
+}
+
 export interface SkillInfo {
   name: string
   description: string

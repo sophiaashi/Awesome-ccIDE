@@ -26,6 +26,9 @@ interface ElectronAPI {
     taskDelete: (label: string, plistPath: string) => Promise<{ success: boolean; error?: string }>
     loadNotes: () => Promise<{ content: string; path: string }>
     saveNotes: (content: string) => Promise<{ success: boolean; error?: string }>
+    listRemoteTriggers: () => Promise<import('./types/toolsidebar').RemoteTriggerListResult>
+    remoteTriggerToggle: (id: string, enabled: boolean) => Promise<{ success: boolean; error?: string }>
+    remoteTriggerDelete: (id: string) => Promise<{ success: boolean; error?: string }>
   }
   hooks: {
     check: () => Promise<{ stopInstalled: boolean; notifyInstalled: boolean }>
