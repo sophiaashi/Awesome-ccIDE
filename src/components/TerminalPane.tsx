@@ -1,5 +1,5 @@
 // 单个终端面板组件 — 封装 xterm.js 实例
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef, useCallback, useState } from 'react'
 import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import { WebLinksAddon } from '@xterm/addon-web-links'
@@ -8,8 +8,12 @@ import '@xterm/xterm/css/xterm.css'
 interface TerminalPaneProps {
   /** 终端唯一标识 */
   terminalId: string
-  /** 显示标题 */
+  /** 显示标题（fallback：firstPrompt 或 Terminal {id}） */
   title: string
+  /** 当前自定义名称（用于 in-place 重命名输入框初始值） */
+  customName?: string
+  /** 关联的 session ID（为空时不允许重命名） */
+  sessionId?: string
   /** 项目名称（用于颜色标识） */
   projectName?: string
   /** 项目颜色 */
@@ -24,11 +28,15 @@ interface TerminalPaneProps {
   onActivate?: (terminalId: string) => void
   /** 终端有新输出时触发（用于清除通知） */
   onData?: (terminalId: string) => void
+  /** 重命名回调（提交时调用，name 为空表示删除自定义名称） */
+  onRename?: (terminalId: string, name: string) => void
 }
 
 export function TerminalPane({
   terminalId,
   title,
+  customName,
+  sessionId,
   projectName,
   projectColor = 'var(--text-muted)',
   isActive = false,
@@ -36,11 +44,17 @@ export function TerminalPane({
   onClose,
   onActivate,
   onData: onDataCallback,
+  onRename,
 }: TerminalPaneProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const terminalRef = useRef<Terminal | null>(null)
   const fitAddonRef = useRef<FitAddon | null>(null)
   const cleanupRef = useRef<(() => void) | null>(null)
+  const renameInputRef = useRef<HTMLInputElement>(null)
+
+  // 重命名状态
+  const [renaming, setRenaming] = useState(false)
+  const [nameDraft, setNameDraft] = useState('')
 
   // 初始化 xterm.js 终端
   useEffect(() => {
@@ -164,6 +178,14 @@ export function TerminalPane({
     }
   }, [isActive, terminalId])
 
+  // 进入重命名模式时自动聚焦输入框
+  useEffect(() => {
+    if (renaming && renameInputRef.current) {
+      renameInputRef.current.focus()
+      renameInputRef.current.select()
+    }
+  }, [renaming])
+
   // 处理关闭
   const handleClose = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
@@ -174,6 +196,36 @@ export function TerminalPane({
   const handleClick = useCallback(() => {
     onActivate?.(terminalId)
   }, [terminalId, onActivate])
+
+  // 一键定位到最下方
+  const handleScrollToBottom = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+    try {
+      terminalRef.current?.scrollToBottom()
+    } catch {}
+  }, [])
+
+  // 进入重命名
+  const startRename = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!sessionId) return // 未绑定 session 不允许重命名
+    setNameDraft(customName || '')
+    setRenaming(true)
+  }, [sessionId, customName])
+
+  // 提交重命名
+  const submitRename = useCallback(() => {
+    setRenaming(false)
+    const next = nameDraft.trim()
+    if (next === (customName || '')) return
+    onRename?.(terminalId, next)
+  }, [terminalId, nameDraft, customName, onRename])
+
+  // 取消重命名
+  const cancelRename = useCallback(() => {
+    setRenaming(false)
+    setNameDraft(customName || '')
+  }, [customName])
 
   return (
     <div
@@ -205,20 +257,77 @@ export function TerminalPane({
               backgroundColor: projectColor,
             }}
           />
-          {/* 标题 */}
-          <span
-            className="text-xs truncate"
-            style={{
-              color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
-              fontWeight: isActive ? 500 : 400,
-              fontSize: '11px',
-            }}
-            title={title}
-          >
-            {title}
-          </span>
+          {/* 标题 / 重命名输入框 */}
+          {renaming ? (
+            <input
+              ref={renameInputRef}
+              value={nameDraft}
+              onChange={e => setNameDraft(e.target.value)}
+              onClick={e => e.stopPropagation()}
+              onKeyDown={e => {
+                e.stopPropagation()
+                if (e.key === 'Enter') { e.preventDefault(); submitRename() }
+                if (e.key === 'Escape') { e.preventDefault(); cancelRename() }
+              }}
+              onBlur={submitRename}
+              placeholder="Session 名称（空 = 清除）"
+              className="flex-1 h-[22px] px-2 text-[11px] rounded-[4px] outline-none min-w-0"
+              style={{
+                background: 'rgba(255,255,255,0.06)',
+                color: 'var(--accent)',
+                border: '1px solid var(--accent-border, rgba(218,119,86,0.5))',
+                fontWeight: 590,
+                maxWidth: '320px',
+              }}
+            />
+          ) : (
+            <>
+              <span
+                className="text-xs truncate cursor-text"
+                onClick={startRename}
+                onDoubleClick={startRename}
+                style={{
+                  color: customName ? 'var(--accent)' : (isActive ? 'var(--text-primary)' : 'var(--text-secondary)'),
+                  fontWeight: customName ? 590 : (isActive ? 500 : 400),
+                  fontSize: '11px',
+                }}
+                title={sessionId ? `${title}（点击重命名）` : title}
+              >
+                {title}
+              </span>
+              {/* 重命名图标按钮（仅当有 sessionId 时显示） */}
+              {sessionId && (
+                <button
+                  onClick={startRename}
+                  className="shrink-0 flex items-center justify-center rounded cursor-pointer opacity-0 group-hover:opacity-100"
+                  style={{
+                    width: '18px',
+                    height: '18px',
+                    color: 'var(--text-muted)',
+                    transition: 'all 0.15s ease',
+                    opacity: 0.5,
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)'
+                    e.currentTarget.style.color = 'var(--accent)'
+                    e.currentTarget.style.opacity = '1'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent'
+                    e.currentTarget.style.color = 'var(--text-muted)'
+                    e.currentTarget.style.opacity = '0.5'
+                  }}
+                  title={customName ? '重命名' : '为这个 session 命名'}
+                >
+                  <svg width="9" height="9" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                    <path d="M11.5 1.5l3 3-9 9H2.5v-3l9-9z" />
+                  </svg>
+                </button>
+              )}
+            </>
+          )}
           {/* 项目名 */}
-          {projectName && (
+          {projectName && !renaming && (
             <span
               className="text-xs shrink-0"
               style={{
@@ -231,30 +340,60 @@ export function TerminalPane({
           )}
         </div>
 
-        {/* 关闭按钮 */}
-        <button
-          onClick={handleClose}
-          className="shrink-0 flex items-center justify-center rounded cursor-pointer"
-          style={{
-            width: '20px',
-            height: '20px',
-            color: 'var(--text-muted)',
-            transition: 'all 0.15s ease',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)'
-            e.currentTarget.style.color = 'var(--accent)'
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'transparent'
-            e.currentTarget.style.color = 'var(--text-muted)'
-          }}
-          title="关闭终端"
-        >
-          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-            <path d="M8 2L2 8M2 2L8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-          </svg>
-        </button>
+        {/* 右侧操作按钮 */}
+        <div className="flex items-center gap-0.5 shrink-0">
+          {/* 一键定位到底部按钮 */}
+          <button
+            onClick={handleScrollToBottom}
+            className="shrink-0 flex items-center justify-center rounded cursor-pointer"
+            style={{
+              width: '20px',
+              height: '20px',
+              color: 'var(--text-muted)',
+              transition: 'all 0.15s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)'
+              e.currentTarget.style.color = 'var(--accent)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent'
+              e.currentTarget.style.color = 'var(--text-muted)'
+            }}
+            title="跳到最新输出"
+          >
+            <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M8 2v10" />
+              <path d="M3.5 8.5L8 13l4.5-4.5" />
+              <path d="M3 14h10" />
+            </svg>
+          </button>
+
+          {/* 关闭按钮 */}
+          <button
+            onClick={handleClose}
+            className="shrink-0 flex items-center justify-center rounded cursor-pointer"
+            style={{
+              width: '20px',
+              height: '20px',
+              color: 'var(--text-muted)',
+              transition: 'all 0.15s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)'
+              e.currentTarget.style.color = 'var(--accent)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent'
+              e.currentTarget.style.color = 'var(--text-muted)'
+            }}
+            title="关闭终端"
+          >
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+              <path d="M8 2L2 8M2 2L8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
       </div>
 
       {/* xterm.js 容器 */}

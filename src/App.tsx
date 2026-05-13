@@ -155,6 +155,27 @@ export default function App() {
     setLayout(newLayout)
   }, [])
 
+  /**
+   * 重命名终端对应的 session — 立刻更新 openTerminals.customName（让 TabBar/Pane 立即生效），
+   * 然后调 IPC 持久化 + refresh 让左侧 SessionList 也同步
+   */
+  const handleRenameTerminal = useCallback(async (terminalId: string, name: string) => {
+    const t = openTerminals.find(x => x.terminalId === terminalId)
+    if (!t?.sessionId) return
+    const trimmed = name.trim()
+    // 乐观更新：立刻反映到 TabBar / TerminalPane 标题
+    setOpenTerminals(prev => prev.map(x =>
+      x.terminalId === terminalId ? { ...x, customName: trimmed || undefined } : x
+    ))
+    try {
+      await window.electronAPI.sessions.setName(t.sessionId, trimmed)
+      // 让左侧 SessionList 重新拉数据
+      refresh()
+    } catch (err) {
+      console.error('重命名失败:', err)
+    }
+  }, [openTerminals, refresh])
+
   // 键盘导航
   const { selectedIndex, searchInputRef } = useKeyboard({
     itemCount: filteredSessions.length,
@@ -202,6 +223,25 @@ export default function App() {
             firstPrompt: s.firstPrompt || t.firstPrompt,
             customName: s.customName,
           }
+        }
+        return t
+      })
+      return changed ? next : prev
+    })
+  }, [sessions])
+
+  // ========== 当左侧 SessionItem 改名后，sessions 会刷新 → 把新 customName 同步到 openTerminals ==========
+  useEffect(() => {
+    if (sessions.length === 0) return
+    setOpenTerminals(prev => {
+      let changed = false
+      const next = prev.map(t => {
+        if (!t.sessionId) return t
+        const s = sessions.find(x => x.sessionId === t.sessionId)
+        if (!s) return t
+        if ((s.customName || undefined) !== (t.customName || undefined)) {
+          changed = true
+          return { ...t, customName: s.customName }
         }
         return t
       })
@@ -562,6 +602,7 @@ export default function App() {
             activeTerminalId={activeTerminalId}
             onActivate={handleActivateTerminal}
             onClose={handleCloseTerminal}
+            onRename={handleRenameTerminal}
           />
         )}
 
@@ -612,6 +653,7 @@ export default function App() {
             onActivateTerminal={handleActivateTerminal}
             notifyingSessionIds={notifyingSessionIds}
             onTerminalData={handleTerminalData}
+            onRenameTerminal={handleRenameTerminal}
           />
         </div>
       </div>

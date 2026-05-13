@@ -18,6 +18,8 @@ interface TerminalPanelProps {
   notifyingSessionIds?: Set<string>
   /** terminal 有新输出时触发 */
   onTerminalData?: (terminalId: string) => void
+  /** 重命名回调（提交时调用，name 为空表示清除自定义名称） */
+  onRenameTerminal?: (terminalId: string, name: string) => void
 }
 
 /** 根据布局类型和终端数量计算 CSS grid 样式 */
@@ -92,6 +94,7 @@ export function TerminalPanel({
   onActivateTerminal,
   notifyingSessionIds,
   onTerminalData,
+  onRenameTerminal,
 }: TerminalPanelProps) {
   // 无终端时显示空状态
   if (terminals.length === 0) {
@@ -172,6 +175,8 @@ export function TerminalPanel({
             <TerminalPane
               terminalId={terminal.terminalId}
               title={terminal.customName || terminal.firstPrompt || `Terminal ${terminal.terminalId}`}
+              customName={terminal.customName}
+              sessionId={terminal.sessionId}
               projectName={terminal.projectName}
               projectColor={terminal.projectName ? getProjectColor(terminal.projectName) : undefined}
               isActive={isActive}
@@ -179,6 +184,7 @@ export function TerminalPanel({
               onClose={onCloseTerminal}
               onActivate={onActivateTerminal}
               onData={onTerminalData}
+              onRename={onRenameTerminal}
             />
           </div>
         )
