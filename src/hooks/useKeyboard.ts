@@ -33,12 +33,23 @@ export function useKeyboard({ itemCount, onEnter, onEscape }: UseKeyboardOptions
   }, [itemCount])
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    // ⌘K 聚焦搜索框
+    // ⌘K 聚焦搜索框 — 始终生效（即使焦点在编辑器里也允许切回搜索）
     if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
       e.preventDefault()
       searchInputRef.current?.focus()
       return
     }
+
+    // 焦点在可编辑元素（input/textarea/contenteditable）时，不要拦截 ↑↓/Enter/Escape，
+    // 否则会把备忘录、重命名输入框等的换行/导航按键吞掉
+    const target = e.target as HTMLElement | null
+    const tag = target?.tagName
+    const isEditing =
+      tag === 'INPUT' ||
+      tag === 'TEXTAREA' ||
+      tag === 'SELECT' ||
+      target?.isContentEditable === true
+    if (isEditing) return
 
     // ↑ 键：向上移动
     if (e.key === 'ArrowUp') {

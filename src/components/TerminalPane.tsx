@@ -92,6 +92,16 @@ export function TerminalPane({
       },
       allowProposedApi: true,
       scrollback: 5000,
+      // OSC 8 超链接处理（Claude/teamo 在 Sources 里输出的 markdown 链接走的是这个协议）
+      linkHandler: {
+        activate: (_event, text) => {
+          if (!text) return
+          // 只放行 http/https/mailto，其它协议忽略避免安全问题
+          if (/^(https?|mailto):/i.test(text)) {
+            window.electronAPI.shell.openExternal(text).catch(() => {})
+          }
+        },
+      },
     })
 
     const fitAddon = new FitAddon()

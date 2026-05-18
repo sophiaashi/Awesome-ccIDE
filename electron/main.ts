@@ -248,10 +248,10 @@ ipcMain.handle('terminal:create', async (_event, sessionId: string, projectPath:
     }
   })
 
-  // 先等 shell 初始化，然后发送 teamo 命令（teamo 内部默认走 claude mode）
+  // 先等 shell 初始化，然后发送 claude 命令
   // sessionId 为空 → 新建 session，否则 resume 指定 session
   setTimeout(() => {
-    const cmd = sessionId ? `teamo --resume ${sessionId}\r` : `teamo\r`
+    const cmd = sessionId ? `claude --resume ${sessionId}\r` : `claude\r`
     ptyProcess.write(cmd)
   }, 300)
 
