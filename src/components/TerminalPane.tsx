@@ -51,6 +51,8 @@ export function TerminalPane({
   const fitAddonRef = useRef<FitAddon | null>(null)
   const cleanupRef = useRef<(() => void) | null>(null)
   const renameInputRef = useRef<HTMLInputElement>(null)
+  /** 用户在 Claude Code 输入框里"还没提交"的输入 — 用于 cmd+z 撤销整段 */
+  const pendingInputRef = useRef('')
 
   // 重命名状态
   const [renaming, setRenaming] = useState(false)
@@ -112,6 +114,34 @@ export function TerminalPane({
     terminal.loadAddon(fitAddon)
     terminal.loadAddon(webLinksAddon)
 
+    // cmd+z 撤销：发送 pendingInput.length 个 Backspace（\x7f），把"还没提交的输入"整段抹掉。
+    // 同时也在这里追踪 Enter 提交时机：不带 modifier 的 Enter = 提交，清空 buffer；
+    // Shift/Alt/Option + Enter = 换行，buffer 追加 \n
+    terminal.attachCustomKeyEventHandler((e) => {
+      if (e.type !== 'keydown') return true
+      // cmd+z（也兼容 cmd+shift+z）→ 撤销整段未提交输入
+      if (e.metaKey && !e.ctrlKey && !e.altKey && e.key.toLowerCase() === 'z') {
+        const len = pendingInputRef.current.length
+        if (len > 0) {
+          window.electronAPI.terminal.write(terminalId, '\x7f'.repeat(len))
+          pendingInputRef.current = ''
+        }
+        e.preventDefault()
+        return false
+      }
+      // Enter 提交（不带任何 modifier）→ 清空 buffer
+      if (e.key === 'Enter' && !e.shiftKey && !e.metaKey && !e.altKey && !e.ctrlKey) {
+        pendingInputRef.current = ''
+        return true
+      }
+      // Shift / Option / Alt + Enter → 换行，算作输入的一部分
+      if (e.key === 'Enter' && (e.shiftKey || e.altKey)) {
+        pendingInputRef.current += '\n'
+        return true
+      }
+      return true
+    })
+
     terminal.open(containerRef.current)
 
     // 初始 fit
@@ -126,8 +156,37 @@ export function TerminalPane({
     terminalRef.current = terminal
     fitAddonRef.current = fitAddon
 
-    // 监听用户键盘输入，转发到 pty
+    // 监听用户键盘输入，转发到 pty + 同步维护 pendingInput（用于 cmd+z 撤销）
+    // 关键：识别 ESC 控制序列（方向键 \x1b[A、Home/End/PgUp 等）整段跳过，不清空 buffer，
+    // 否则用户按一次方向键 cmd+z 就废了，体验崩溃
     const inputDisposable = terminal.onData((data) => {
+      let i = 0
+      while (i < data.length) {
+        const ch = data[i]
+        const code = ch.charCodeAt(0)
+        // ESC 序列：\x1b 后跟 [ 或 O，再跟若干字符直到一个字母 / ~ 终止
+        if (ch === '\x1b') {
+          if (data[i + 1] === '[' || data[i + 1] === 'O') {
+            let j = i + 2
+            while (j < data.length && !/[A-Za-z~]/.test(data[j])) j++
+            i = j + 1
+            continue
+          }
+          i++ // 裸 ESC 也跳过
+          continue
+        }
+        if (ch === '\x7f' || ch === '\b') {
+          pendingInputRef.current = pendingInputRef.current.slice(0, -1)
+        } else if (ch === '\r' || ch === '\n') {
+          // 普通 Enter / Shift+Enter 已在 attachCustomKeyEventHandler 里处理
+        } else if (code < 32 && ch !== '\t') {
+          // 其它 Ctrl 字符（Ctrl+C / Ctrl+U / Ctrl+W 等）→ 静默跳过，不清空也不累计
+          // 这样即使用户按了 Ctrl+W 删一个词，buffer 长度会偏大 N，但 cmd+z 多发的 backspace 会被 TUI 安全忽略
+        } else {
+          pendingInputRef.current += ch
+        }
+        i++
+      }
       window.electronAPI.terminal.write(terminalId, data)
     })
 
