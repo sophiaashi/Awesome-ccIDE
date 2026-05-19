@@ -94,6 +94,10 @@ export function TerminalPane({
       },
       allowProposedApi: true,
       scrollback: 5000,
+      // 按住 Option 拖动 = 强制选择，忽略 TUI 的鼠标追踪（修复 Claude Code 里很难拖选的问题）
+      macOptionClickForcesSelection: true,
+      // 双击选词、右键自动选词
+      rightClickSelectsWord: true,
       // OSC 8 超链接处理（Claude/teamo 在 Sources 里输出的 markdown 链接走的是这个协议）
       linkHandler: {
         activate: (_event, text) => {
@@ -119,6 +123,18 @@ export function TerminalPane({
     // Shift/Alt/Option + Enter = 换行，buffer 追加 \n
     terminal.attachCustomKeyEventHandler((e) => {
       if (e.type !== 'keydown') return true
+      // cmd+c → 复制选区：xterm 默认复制会带上每行末尾的填充空格（cell-based 渲染的副作用），
+      // 这里手动 trimEnd 每行后写入剪贴板。无选区时不拦截（让默认行为接管）。
+      if (e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'c') {
+        const sel = terminal.getSelection()
+        if (sel) {
+          const cleaned = sel.split('\n').map(l => l.replace(/[\s\u00a0]+$/u, '')).join('\n')
+          navigator.clipboard.writeText(cleaned).catch(() => {})
+          e.preventDefault()
+          return false
+        }
+        return true
+      }
       // cmd+z（也兼容 cmd+shift+z）→ 撤销整段未提交输入
       if (e.metaKey && !e.ctrlKey && !e.altKey && e.key.toLowerCase() === 'z') {
         const len = pendingInputRef.current.length
