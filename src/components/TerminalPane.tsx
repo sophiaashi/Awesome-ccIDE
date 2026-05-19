@@ -123,12 +123,28 @@ export function TerminalPane({
     // Shift/Alt/Option + Enter = 换行，buffer 追加 \n
     terminal.attachCustomKeyEventHandler((e) => {
       if (e.type !== 'keydown') return true
-      // cmd+c → 复制选区：xterm 默认复制会带上每行末尾的填充空格（cell-based 渲染的副作用），
-      // 这里手动 trimEnd 每行后写入剪贴板。无选区时不拦截（让默认行为接管）。
+      // cmd+c → 复制选区：xterm 默认复制有两个坑
+      //   1) 每行末尾会带上 cell 填充空格 → trimEnd
+      //   2) 长行被终端宽度自动 wrap 出来的"软换行"也会变成 \n → 用 buffer line.isWrapped 判断，软换行不加 \n
+      // 无选区时不拦截（让默认行为接管）。
       if (e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'c') {
-        const sel = terminal.getSelection()
-        if (sel) {
-          const cleaned = sel.split('\n').map(l => l.replace(/[\s\u00a0]+$/u, '')).join('\n')
+        const pos = terminal.getSelectionPosition()
+        if (pos) {
+          const buf = terminal.buffer.active
+          let out = ''
+          for (let y = pos.start.y; y <= pos.end.y; y++) {
+            const line = buf.getLine(y)
+            if (!line) continue
+            const startCol = y === pos.start.y ? pos.start.x : 0
+            const endCol = y === pos.end.y ? pos.end.x : undefined
+            out += line.translateToString(false, startCol, endCol)
+            if (y < pos.end.y) {
+              const next = buf.getLine(y + 1)
+              // 下一行是软换行（wrap 出来的）→ 同一逻辑行，不加 \n
+              if (!next?.isWrapped) out += '\n'
+            }
+          }
+          const cleaned = out.split('\n').map(l => l.replace(/[\s\u00a0]+$/u, '')).join('\n')
           navigator.clipboard.writeText(cleaned).catch(() => {})
           e.preventDefault()
           return false
