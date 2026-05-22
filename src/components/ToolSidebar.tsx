@@ -171,8 +171,8 @@ export function ToolSidebar({ activeProjectPath }: ToolSidebarProps) {
           /* 折叠：顶部 38px 拖拽区对齐左右面板，下面是竖向 tab 图标 + 小标签 */
           <>
             <div
-              className="shrink-0"
-              style={{ height: '38px', WebkitAppRegion: 'drag' } as React.CSSProperties}
+              className="drag-region shrink-0"
+              style={{ height: '38px' }}
             />
             <div className="flex flex-col items-center gap-2 pt-2">
               {TABS.map(t => (

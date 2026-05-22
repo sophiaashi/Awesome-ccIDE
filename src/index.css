@@ -1,5 +1,16 @@
 @import "tailwindcss";
 
+/* macOS hiddenInset 标题栏拖动区域。用 class 比 inline style 稳，避免 React/Vite 处理
+ * WebkitAppRegion 时序列化丢失。带 !important 防 Tailwind utility 覆盖。 */
+.drag-region {
+  -webkit-app-region: drag !important;
+  app-region: drag !important;
+}
+.no-drag-region {
+  -webkit-app-region: no-drag !important;
+  app-region: no-drag !important;
+}
+
 /*
  * Design system inspired by Linear's dark-mode-native aesthetic
  * Near-black canvas, semi-transparent white borders, luminance-based depth

@@ -389,17 +389,16 @@ export default function App() {
          * 如果还在右侧塞 3 个按钮会和 traffic light 物理重叠。
          * 所以收起态时 titlebar 里不放任何按钮（refresh/theme/collapse 都移到展开态/下方）。
          */}
-        <div className="shrink-0 flex items-end justify-end gap-1 px-2" style={{ height: '38px', WebkitAppRegion: 'drag' } as React.CSSProperties}>
+        <div className="drag-region shrink-0 flex items-end justify-end gap-1 px-2" style={{ height: '38px' }}>
           {!leftPanelCollapsed && <>
           {/* 刷新 */}
           <button
             onClick={refresh}
-            className="cursor-pointer flex items-center justify-center rounded-md mb-1"
+            className="no-drag-region cursor-pointer flex items-center justify-center rounded-md mb-1"
             style={{
               width: '24px', height: '24px',
               color: 'var(--text-muted)',
-              WebkitAppRegion: 'no-drag',
-            } as React.CSSProperties}
+            }}
             title="刷新 session 列表"
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -411,13 +410,12 @@ export default function App() {
           {/* 主题切换 */}
           <button
             onClick={toggleTheme}
-            className="cursor-pointer flex items-center justify-center rounded-md mb-1"
+            className="no-drag-region cursor-pointer flex items-center justify-center rounded-md mb-1"
             style={{
               width: '24px',
               height: '24px',
               color: 'var(--text-muted)',
-              WebkitAppRegion: 'no-drag',
-            } as React.CSSProperties}
+            }}
             title={theme === 'dark' ? '切换到明亮模式' : '切换到暗黑模式'}
           >
             {theme === 'dark' ? (
@@ -437,13 +435,12 @@ export default function App() {
           {/* 收起/展开（只在展开态显示） */}
           <button
             onClick={() => setLeftPanelCollapsed(prev => !prev)}
-            className="cursor-pointer flex items-center justify-center rounded-md mb-1"
+            className="no-drag-region cursor-pointer flex items-center justify-center rounded-md mb-1"
             style={{
               width: '24px',
               height: '24px',
               color: 'var(--text-muted)',
-              WebkitAppRegion: 'no-drag',
-            } as React.CSSProperties}
+            }}
             title="收起面板"
           >
             <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
@@ -580,19 +577,23 @@ export default function App() {
 
       {/* ========== 右侧面板：终端区域 ========== */}
       <div className="flex-1 flex flex-col min-w-0 h-full">
-        {/* 终端区域顶部：布局控制 */}
+        {/* 终端区域顶部：布局控制 + macOS hiddenInset 标题栏拖动区
+         * 这块 38px 高度对应了 macOS 红绿灯下方的拖动空间，必须设 drag，
+         * 否则用户在右侧顶部拖窗口完全没反应。LayoutBar 子元素显式 no-drag */}
         <div
-          className="shrink-0 flex items-center px-4"
+          className="drag-region shrink-0 flex items-center px-4"
           style={{
             height: '38px',
             borderBottom: '1px solid var(--border)',
             paddingLeft: leftPanelCollapsed ? '80px' : '16px',
           }}
         >
-          <LayoutBar
-            activeLayout={layout}
-            onLayoutChange={handleLayoutChange}
-          />
+          <div className="no-drag-region">
+            <LayoutBar
+              activeLayout={layout}
+              onLayoutChange={handleLayoutChange}
+            />
+          </div>
         </div>
 
         {/* Chrome 风格 Tab 栏 — 仅 stack 布局显示 */}
