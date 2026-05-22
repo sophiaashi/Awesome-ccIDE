@@ -8,6 +8,7 @@ export interface ElectronAPI {
     load: () => Promise<any>
     search: (query: string) => Promise<any>
     setName: (sessionId: string, name: string) => Promise<any>
+    setPin: (sessionId: string, pinned: boolean) => Promise<{ success: boolean; pinned: boolean }>
   }
 
   // 终端管理
@@ -58,6 +59,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     search: (query: string) => ipcRenderer.invoke('sessions:search', query),
     setName: (sessionId: string, name: string) =>
       ipcRenderer.invoke('sessions:set-name', sessionId, name),
+    setPin: (sessionId: string, pinned: boolean) =>
+      ipcRenderer.invoke('sessions:set-pin', sessionId, pinned),
   },
 
   // 终端管理

@@ -102,8 +102,11 @@ export function useSearch(sessions: Session[]): UseSearchReturn {
       })
     }
 
-    // 3. 排序
+    // 3. 排序 — 置顶始终优先，组内按 sortMode 排
     result = [...result].sort((a, b) => {
+      const pa = a.pinned ? 1 : 0
+      const pb = b.pinned ? 1 : 0
+      if (pa !== pb) return pb - pa
       switch (sortMode) {
         case 'modified':
           return new Date(b.modified).getTime() - new Date(a.modified).getTime()

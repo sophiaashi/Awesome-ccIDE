@@ -3,7 +3,7 @@ import { app, BrowserWindow, ipcMain, shell } from 'electron'
 import path from 'path'
 import os from 'os'
 import * as pty from 'node-pty'
-import { loadAllSessions, fullTextSearch, setSessionName, deleteSessionName } from '../server/sessions'
+import { loadAllSessions, fullTextSearch, setSessionName, deleteSessionName, setSessionPin } from '../server/sessions'
 import { loadAllSkills } from '../server/skills'
 import { loadClaudeMd, saveClaudeMd } from '../server/claudemd'
 import {
@@ -120,6 +120,12 @@ ipcMain.handle('sessions:set-name', async (_event, sessionId: string, name: stri
     deleteSessionName(sessionId)
   }
   return { success: true, name: name.trim() || null }
+})
+
+/** 置顶/取消置顶 session */
+ipcMain.handle('sessions:set-pin', async (_event, sessionId: string, pinned: boolean) => {
+  setSessionPin(sessionId, !!pinned)
+  return { success: true, pinned: !!pinned }
 })
 
 // ========== IPC Handlers: 右侧工具栏 ==========

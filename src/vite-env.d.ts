@@ -6,6 +6,7 @@ interface ElectronAPI {
     load: () => Promise<import('./types/session').SessionsResponse>
     search: (query: string) => Promise<import('./types/session').SearchResponse>
     setName: (sessionId: string, name: string) => Promise<{ success: boolean; name: string | null }>
+    setPin: (sessionId: string, pinned: boolean) => Promise<{ success: boolean; pinned: boolean }>
   }
   terminal: {
     create: (sessionId: string, projectPath: string) => Promise<{ terminalId: string }>

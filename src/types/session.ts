@@ -20,6 +20,8 @@ export interface Session extends SessionEntry {
   projectName: string
   /** 用户自定义名称 */
   customName?: string
+  /** 是否置顶 */
+  pinned?: boolean
 }
 
 /** sessions:load IPC 的响应 */

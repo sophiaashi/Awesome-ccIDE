@@ -67,6 +67,35 @@ export function deleteSessionName(sessionId: string): void {
   saveSessionNames(names)
 }
 
+// ========== Session 置顶管理 ==========
+
+const PINS_FILE = path.join(os.homedir(), '.claude-session-manager', 'pinned-sessions.json')
+
+/** 读取所有置顶的 sessionId 数组 */
+export function loadPinnedIds(): string[] {
+  try {
+    if (existsSync(PINS_FILE)) {
+      const raw = JSON.parse(readFileSync(PINS_FILE, 'utf-8'))
+      return Array.isArray(raw) ? raw.filter((x): x is string => typeof x === 'string') : []
+    }
+  } catch {}
+  return []
+}
+
+function savePinnedIds(ids: string[]): void {
+  const dir = path.dirname(PINS_FILE)
+  if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
+  writeFileSync(PINS_FILE, JSON.stringify(ids, null, 2), 'utf-8')
+}
+
+/** 置顶/取消置顶 */
+export function setSessionPin(sessionId: string, pinned: boolean): void {
+  const ids = new Set(loadPinnedIds())
+  if (pinned) ids.add(sessionId)
+  else ids.delete(sessionId)
+  savePinnedIds(Array.from(ids))
+}
+
 // ========== Session 数据 ==========
 
 export interface SessionData {
@@ -84,6 +113,8 @@ export interface SessionData {
   isSidechain: boolean
   /** 用户自定义名称 */
   customName?: string
+  /** 是否置顶 */
+  pinned?: boolean
 }
 
 /**
@@ -242,9 +273,13 @@ export async function loadAllSessions(): Promise<{
 
   // 合并自定义名称
   const customNames = loadSessionNames()
+  const pinnedSet = new Set(loadPinnedIds())
   for (const session of uniqueSessions) {
     if (customNames[session.sessionId]) {
       session.customName = customNames[session.sessionId]
+    }
+    if (pinnedSet.has(session.sessionId)) {
+      session.pinned = true
     }
   }
 

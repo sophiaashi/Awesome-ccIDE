@@ -75,6 +75,27 @@ export function SessionItem({
     } catch {}
   }
 
+  const togglePin = async () => {
+    try {
+      await window.electronAPI.sessions.setPin(session.sessionId, !session.pinned)
+      onNameChanged?.() // 复用：通知父组件 refresh 列表
+    } catch {}
+  }
+
+  /** 置顶图标按钮 — 已置顶时始终可见（橙色填充），未置顶时只在 hover session-card 时显示 */
+  const PinButton = ({ size = 11, className = '', title }: { size?: number; className?: string; title?: string }) => (
+    <button
+      className={`${session.pinned ? '' : 'name-btn'} shrink-0 flex items-center justify-center rounded-[3px] cursor-pointer ${className}`}
+      style={{ width: `${size + 7}px`, height: `${size + 7}px` }}
+      onClick={e => { e.stopPropagation(); togglePin() }}
+      title={title || (session.pinned ? '取消置顶' : '置顶')}
+    >
+      <svg width={size} height={size} viewBox="0 0 16 16" fill={session.pinned ? 'var(--accent)' : 'none'} stroke={session.pinned ? 'var(--accent)' : 'var(--text-muted)'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M9.828.722a.5.5 0 01.354.146l4.95 4.95a.5.5 0 010 .707c-.48.48-1.072.588-1.503.588-.177 0-.335-.018-.46-.039l-3.134 3.134a5.93 5.93 0 01.16 1.013c.046.702-.032 1.687-.72 2.375a.5.5 0 01-.707 0l-2.829-2.828-3.182 3.182c-.195.195-1.219.902-1.414.707-.195-.195.512-1.22.707-1.414l3.182-3.182-2.828-2.829a.5.5 0 010-.707c.688-.688 1.673-.767 2.375-.72a5.922 5.922 0 011.013.16l3.134-3.133a2.772 2.772 0 01-.04-.461c0-.43.108-1.022.589-1.503a.5.5 0 01.353-.146z"/>
+      </svg>
+    </button>
+  )
+
   const doResume = () => {
     if (status === 'loading' || !onResume) return
     setStatus('loading'); setError('')
@@ -117,11 +138,13 @@ export function SessionItem({
             <button
               className="name-btn shrink-0 w-[16px] h-[16px] flex items-center justify-center rounded-[3px] cursor-pointer"
               onClick={e => { e.stopPropagation(); setRenaming(true) }}
+              title="重命名"
             >
               <svg width="9" height="9" viewBox="0 0 16 16" fill="none" stroke="var(--text-muted)" strokeWidth="1.5" strokeLinecap="round">
                 <path d="M11.5 1.5l3 3-9 9H2.5v-3l9-9z" />
               </svg>
             </button>
+            <PinButton size={9} />
           </div>
         )}
 
@@ -166,15 +189,18 @@ export function SessionItem({
                 />
               )}
 
-              {/* 无名称时的命名按钮 */}
+              {/* 无名称时的命名按钮 + 置顶按钮 */}
               {!renaming && !session.customName && (
-                <button
-                  className="name-btn shrink-0 text-[10px] font-[510] cursor-pointer"
-                  style={{ color: 'var(--text-muted)' }}
-                  onClick={e => { e.stopPropagation(); setNameVal(''); setRenaming(true) }}
-                >
-                  + 命名
-                </button>
+                <>
+                  <button
+                    className="name-btn shrink-0 text-[10px] font-[510] cursor-pointer"
+                    style={{ color: 'var(--text-muted)' }}
+                    onClick={e => { e.stopPropagation(); setNameVal(''); setRenaming(true) }}
+                  >
+                    + 命名
+                  </button>
+                  <PinButton size={10} />
+                </>
               )}
             </div>
 
