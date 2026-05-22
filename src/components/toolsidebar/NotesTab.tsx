@@ -233,6 +233,7 @@ TODO 示例（- [ ] 或 - [x]，上方会显示可点击的列表）：
             ref={textareaRef}
             value={content}
             onChange={e => updateContent(e.target.value)}
+            onKeyDown={handleKeyDown}
             placeholder={placeholder}
             spellCheck={false}
             className="w-full h-full outline-none resize-none text-[12.5px]"
