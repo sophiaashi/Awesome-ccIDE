@@ -106,6 +106,28 @@ export function NotesTab() {
     updateContent(next)
   }, [content, updateContent])
 
+  /**
+   * 用户打 "- " 时自动补全为 "- [ ] "
+   * 触发条件：按空格键，且光标前到行首之间恰好是 "-"（可前置空白用于缩进）
+   */
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key !== ' ' || e.metaKey || e.ctrlKey || e.altKey) return
+    const ta = e.currentTarget
+    const cursor = ta.selectionStart
+    if (cursor !== ta.selectionEnd) return // 有选区不处理
+    const before = ta.value.slice(0, cursor)
+    const lineStart = before.lastIndexOf('\n') + 1
+    const linePrefix = before.slice(lineStart)
+    if (!/^\s*-$/.test(linePrefix)) return
+    e.preventDefault()
+    const insert = ' [ ] '
+    const next = ta.value.slice(0, cursor) + insert + ta.value.slice(cursor)
+    updateContent(next)
+    requestAnimationFrame(() => {
+      ta.selectionStart = ta.selectionEnd = cursor + insert.length
+    })
+  }, [updateContent])
+
   /** 点 TODO 文本：滚动到对应行 + 聚焦 textarea */
   const scrollToLine = useCallback((lineIndex: number) => {
     const ta = textareaRef.current

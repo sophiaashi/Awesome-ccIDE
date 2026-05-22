@@ -123,34 +123,6 @@ export function TerminalPane({
     // Shift/Alt/Option + Enter = 换行，buffer 追加 \n
     terminal.attachCustomKeyEventHandler((e) => {
       if (e.type !== 'keydown') return true
-      // cmd+c → 复制选区：xterm 默认复制有两个坑
-      //   1) 每行末尾会带上 cell 填充空格 → trimEnd
-      //   2) 长行被终端宽度自动 wrap 出来的"软换行"也会变成 \n → 用 buffer line.isWrapped 判断，软换行不加 \n
-      // 无选区时不拦截（让默认行为接管）。
-      if (e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'c') {
-        const pos = terminal.getSelectionPosition()
-        if (pos) {
-          const buf = terminal.buffer.active
-          let out = ''
-          for (let y = pos.start.y; y <= pos.end.y; y++) {
-            const line = buf.getLine(y)
-            if (!line) continue
-            const startCol = y === pos.start.y ? pos.start.x : 0
-            const endCol = y === pos.end.y ? pos.end.x : undefined
-            out += line.translateToString(false, startCol, endCol)
-            if (y < pos.end.y) {
-              const next = buf.getLine(y + 1)
-              // 下一行是软换行（wrap 出来的）→ 同一逻辑行，不加 \n
-              if (!next?.isWrapped) out += '\n'
-            }
-          }
-          const cleaned = out.split('\n').map(l => l.replace(/[\s\u00a0]+$/u, '')).join('\n')
-          navigator.clipboard.writeText(cleaned).catch(() => {})
-          e.preventDefault()
-          return false
-        }
-        return true
-      }
       // cmd+z（也兼容 cmd+shift+z）→ 撤销整段未提交输入
       if (e.metaKey && !e.ctrlKey && !e.altKey && e.key.toLowerCase() === 'z') {
         const len = pendingInputRef.current.length
@@ -243,6 +215,43 @@ export function TerminalPane({
       unsubExit()
     }
 
+    // 监听 document copy 事件 — 无论 cmd+C / 右键菜单 / Edit 菜单触发的复制都会经过这里。
+    // 在事件冒泡阶段覆盖 clipboardData，把 xterm 默认输出（带行末填充空格 + 软换行变 \n）替换成清洁版本。
+    const handleCopy = (ev: ClipboardEvent) => {
+      const container = containerRef.current
+      if (!container) return
+      const target = ev.target as Node | null
+      // 只拦截发生在本 terminal 容器内的复制
+      if (!target || !container.contains(target)) return
+      const pos = terminal.getSelectionPosition()
+      if (!pos) return
+      const buf = terminal.buffer.active
+      let out = ''
+      for (let y = pos.start.y; y <= pos.end.y; y++) {
+        const line = buf.getLine(y)
+        if (!line) continue
+        const startCol = y === pos.start.y ? pos.start.x : 0
+        const endCol = y === pos.end.y ? pos.end.x : undefined
+        out += line.translateToString(false, startCol, endCol)
+        if (y < pos.end.y) {
+          const next = buf.getLine(y + 1)
+          // 下一行是软换行（被终端宽度 wrap 出来的）→ 同一逻辑行，不加 \n
+          if (!next?.isWrapped) out += '\n'
+        }
+      }
+      // 每行末尾 trim 掉 cell 填充空格
+      const trimmed = out.split('\n').map(l => l.replace(/[\s\u00a0]+$/u, '')).join('\n')
+      // 段落合并：单个 \n → 删掉（TUI 自己 emit 的行边界，不是真的段落），
+      // 连续 \n（空行隔开 = 段落边界）→ 折叠为 \n\n 保留
+      const cleaned = trimmed
+        .replace(/\n{2,}/g, '\u0000') // 临时占位防止单 \n 误删
+        .replace(/\n/g, '')           // 单 \n 删除
+        .replace(/\u0000/g, '\n\n')   // 还原段落边界
+      ev.clipboardData?.setData('text/plain', cleaned)
+      ev.preventDefault()
+    }
+    document.addEventListener('copy', handleCopy)
+
     // 监听容器大小变化
     const resizeObserver = new ResizeObserver(() => {
       requestAnimationFrame(() => {
@@ -256,6 +265,7 @@ export function TerminalPane({
 
     return () => {
       resizeObserver.disconnect()
+      document.removeEventListener('copy', handleCopy)
       cleanupRef.current?.()
       terminal.dispose()
       terminalRef.current = null
